@@ -1,0 +1,6 @@
+{"timestamp":"2026-02-19T08:06:20.529Z","run_id":"1771488377645-1188","action":"run_start","status":"running"}
+{"timestamp":"2026-02-19T08:06:20.534Z","run_id":"1771488377645-1188","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-19T08:06:20.788Z","run_id":"1771488377645-1188","row_key":"2","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-19T08:06:20.792Z","run_id":"1771488377645-1188","row_key":"2","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-19T08:06:37.335Z","run_id":"1771488377645-1188","row_key":"2","site_name":"Accountx","action":"selector_mapping_open","status":"running"}
+{"timestamp":"2026-02-19T08:06:38.308Z","run_id":"1771488377645-1188","action":"fatal","status":"failed","error_message":"page.evaluate: Target page, context or browser has been closed"}

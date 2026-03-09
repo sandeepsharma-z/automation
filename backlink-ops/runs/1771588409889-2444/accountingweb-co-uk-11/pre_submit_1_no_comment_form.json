@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T11:54:36.999Z",
+  "step": "no_comment_form_detected",
+  "status": "skipped",
+  "row_key": "11",
+  "site_name": "accountingweb.co.uk",
+  "target_link": "https://www.accountingweb.co.uk/community-voice/blogs",
+  "final_url": "https://www.accountingweb.co.uk/community-voice/blogs",
+  "page_title": "Just a moment...",
+  "message": "Skipped: no comment form detected (not a blog commenting target)"
+}

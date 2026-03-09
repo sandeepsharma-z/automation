@@ -1,0 +1,90 @@
+{
+  "row_key": "5",
+  "site_slug": "accountx-5",
+  "run_id": "manualtest-1771565518979",
+  "workflow_type": "blog_commenting",
+  "input": {
+    "row_key": "5",
+    "backlink_type": "blog_commenting",
+    "site_name": "Accountx",
+    "default_website_url": "https://accountx.in/",
+    "directory_url": "https://myanomaly.wordpress.com/2016/04/30/blogmint-review-monetize-your-blog-and-social-media-accounts/",
+    "site_url": "https://myanomaly.wordpress.com/2016/04/30/blogmint-review-monetize-your-blog-and-social-media-accounts/",
+    "username": "accountx01",
+    "email": "elontak056@gmail.com",
+    "password": "accountx.in@123",
+    "company_name": "Accountx",
+    "company_address": "B-1209, Bhutani Alphathum,, Sector 90, Noida, Uttar Pradesh 201304",
+    "company_phone": "+91 75039 85039",
+    "company_description": "AccounTX welcomes you as your trusted ally for the Outsourced Finance Function. For over a decade, we've reshaped the landscape of Finance Outsourcing, aiming to turn it from a mere business necessity into a strategic advantage. We believe implementing processes and internal financial controls empowers businesses to achieve unparalleled success and make a lasting global impact. Our dedicated team is passionate about efficiency and committed to delivering top-notch financial solutions tailored to your unique needs.\n\nWe assist businesses with comprehensive accounting services in India and globally, ensuring accurate books, compliant reporting, and smooth financial operations. Our bookkeeping services are designed for startups, SMEs, and growing companies that need dependable  financial management. For entrepreneurs preparing to launch a new venture, we provide complete company registration support, including private limited company registration and other business structures. Whether you require company registration in India or an end-to-end business setup in India, our team ensures a seamless, fully compliant experience from start to finish.\n\nThrough our Global Desk, we assist clients in establishing and managing businesses worldwide from India, offering a cost advantage for their accounting, tax, and compliance requirements. Our dream team of Accountants, Financial Analysts, Tax Experts, and Compliance Specialists ensures they effectively address every aspect of their Finance Outsourcing needs. We don't just provide outsourcing solutions; we’re extensions of our clients' teams, collaborating to achieve their business goals.\n\nAccounTX stands as your reliable partner in an ever-evolving business landscape. Transparency forms the bedrock of our client relationships. Whether you’re a small setup or a large enterprise, we possess the expertise, dedication, and technology to elevate your financial processes to new heights.",
+    "target_links": [
+      "https://accountx.in/"
+    ],
+    "target_link": "https://accountx.in/",
+    "anchor_text": "",
+    "category": "Blog Commenting",
+    "notes": "Great insights on financial management and compliance. Many growing businesses struggle with structured accounting processes and internal controls.\n\nFor companies looking for reliable accounting services, bookkeeping, tax compliance, and company registration support in India, AccounTX provides end-to-end outsourced finance solutions.\n\nYou can explore more here: https://accountx.in/",
+    "tags": [],
+    "credentials": {
+      "username": "accountx01",
+      "email": "elontak056@gmail.com",
+      "password": "accountx.in@123"
+    },
+    "business_profile": {
+      "company_name": "Accountx",
+      "company_address": "B-1209, Bhutani Alphathum,, Sector 90, Noida, Uttar Pradesh 201304",
+      "company_phone": "+91 75039 85039",
+      "company_description": "AccounTX welcomes you as your trusted ally for the Outsourced Finance Function. For over a decade, we've reshaped the landscape of Finance Outsourcing, aiming to turn it from a mere business necessity into a strategic advantage. We believe implementing processes and internal financial controls empowers businesses to achieve unparalleled success and make a lasting global impact. Our dedicated team is passionate about efficiency and committed to delivering top-notch financial solutions tailored to your unique needs.\n\nWe assist businesses with comprehensive accounting services in India and globally, ensuring accurate books, compliant reporting, and smooth financial operations. Our bookkeeping services are designed for startups, SMEs, and growing companies that need dependable  financial management. For entrepreneurs preparing to launch a new venture, we provide complete company registration support, including private limited company registration and other business structures. Whether you require company registration in India or an end-to-end business setup in India, our team ensures a seamless, fully compliant experience from start to finish.\n\nThrough our Global Desk, we assist clients in establishing and managing businesses worldwide from India, offering a cost advantage for their accounting, tax, and compliance requirements. Our dream team of Accountants, Financial Analysts, Tax Experts, and Compliance Specialists ensures they effectively address every aspect of their Finance Outsourcing needs. We don't just provide outsourcing solutions; we’re extensions of our clients' teams, collaborating to achieve their business goals.\n\nAccounTX stands as your reliable partner in an ever-evolving business landscape. Transparency forms the bedrock of our client relationships. Whether you’re a small setup or a large enterprise, we possess the expertise, dedication, and technology to elevate your financial processes to new heights."
+    },
+    "results": [
+      {
+        "target_link": "https://accountx.in/",
+        "created_link": "",
+        "result_title": "",
+        "status": "pending_verification",
+        "status_reason": "Login/signup required before comment submission.",
+        "artifacts": [
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565438220\\accountx-5\\pre_submit_1_auth_required.png",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565438220\\accountx-5\\pre_submit_1_auth_required.html",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565438220\\accountx-5\\pre_submit_1_auth_required.json"
+        ],
+        "updated_at": "2026-02-20T05:31:10.003Z"
+      }
+    ],
+    "result_title": "",
+    "created_link": "",
+    "status": "pending_verification",
+    "status_reason": "pending_verification:1 | Login/signup required before comment submission.",
+    "run_id": "manualtest-1771565438220",
+    "started_at": "2026-02-19T12:06:24.436Z",
+    "completed_at": "2026-02-20T05:31:10.042Z",
+    "screenshot_url": "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565438220\\accountx-5\\pre_submit_1_auth_required.png",
+    "created_at": "2026-02-19T12:06:24.432Z",
+    "__rowKey": "5"
+  },
+  "output": {
+    "results": [
+      {
+        "target_link": "https://accountx.in/",
+        "created_link": "",
+        "result_title": "",
+        "status": "failed",
+        "status_reason": "locator.click: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#comment-submit, #commentform button[type=\\'submit\\'], #commentform input[type=\\'submit\\']').first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled name=\"submit\" type=\"submit\" id=\"comment-submit\" aria-disabled=\"true\">Comment</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    23 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m",
+        "artifacts": [
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565518979\\accountx-5\\pre_submit_1_failed.png",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565518979\\accountx-5\\pre_submit_1_failed.html",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565518979\\accountx-5\\pre_submit_1_failed.json"
+        ],
+        "updated_at": "2026-02-20T05:34:03.453Z"
+      }
+    ],
+    "result_title": "",
+    "created_link": "",
+    "status": "failed",
+    "status_reason": "failed:1 | locator.click: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#comment-submit, #commentform button[type=\\'submit\\'], #commentform input[type=\\'submit\\']').first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled name=\"submit\" type=\"submit\" id=\"comment-submit\" aria-disabled=\"true\">Comment</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    23 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m",
+    "run_id": "manualtest-1771565518979",
+    "started_at": "2026-02-19T12:06:24.436Z",
+    "completed_at": "2026-02-20T05:34:03.504Z",
+    "screenshot_url": "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565518979\\accountx-5\\pre_submit_1_failed.png"
+  }
+}

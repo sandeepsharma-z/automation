@@ -1,0 +1,17 @@
+﻿# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Node
+node_modules/
+.next/
+
+# Logs / tmp
+*.log
+.pytest_cache/
+coverage.xml
+
+# Local storage
+storage/

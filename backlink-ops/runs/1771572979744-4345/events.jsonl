@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T07:36:23.003Z","run_id":"1771572979744-4345","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T07:36:23.010Z","run_id":"1771572979744-4345","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T07:36:23.383Z","run_id":"1771572979744-4345","row_key":"7","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-20T07:36:23.387Z","run_id":"1771572979744-4345","row_key":"7","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T07:36:38.148Z","run_id":"1771572979744-4345","row_key":"7","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://onlybraces.enginyre.in/"}
+{"timestamp":"2026-02-20T07:37:02.691Z","run_id":"1771572979744-4345","row_key":"7","site_name":"Accountx","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771572979744-4345\\accountx-7\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T07:37:02.747Z","run_id":"1771572979744-4345","row_key":"7","site_name":"Accountx","action":"target_processed","status":"skipped","error_message":"https://onlybraces.enginyre.in/ :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T07:37:03.084Z","run_id":"1771572979744-4345","action":"run_end","status":"completed"}

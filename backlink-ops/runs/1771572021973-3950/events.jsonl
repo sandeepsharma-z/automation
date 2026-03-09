@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T07:20:25.304Z","run_id":"1771572021973-3950","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T07:20:25.311Z","run_id":"1771572021973-3950","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T07:20:25.682Z","run_id":"1771572021973-3950","row_key":"6","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-20T07:20:25.688Z","run_id":"1771572021973-3950","row_key":"6","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T07:20:54.107Z","run_id":"1771572021973-3950","row_key":"6","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T07:22:17.104Z","run_id":"1771572021973-3950","row_key":"6","site_name":"Accountx","action":"approval_checkpoint","status":"approved","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771572021973-3950\\accountx-6\\pre_submit_1.png","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T07:22:43.604Z","run_id":"1771572021973-3950","row_key":"6","site_name":"Accountx","action":"target_processed","status":"failed","error_message":"https://accountx.in/ :: Post-submit page indicates comment submission failure."}
+{"timestamp":"2026-02-20T07:22:44.086Z","run_id":"1771572021973-3950","action":"run_end","status":"completed"}

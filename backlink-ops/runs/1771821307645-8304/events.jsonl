@@ -1,0 +1,9 @@
+{"timestamp":"2026-02-23T04:35:12.483Z","run_id":"1771821307645-8304","action":"run_start","status":"running"}
+{"timestamp":"2026-02-23T04:35:12.491Z","run_id":"1771821307645-8304","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-23T04:35:12.818Z","run_id":"1771821307645-8304","row_key":"23","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-23T04:35:12.824Z","run_id":"1771821307645-8304","row_key":"23","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-23T04:35:20.057Z","run_id":"1771821307645-8304","row_key":"23","site_name":"Accountx","action":"navigate","status":"retrying","error_message":"attempt 1: page.goto: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - navigating to \"https://www.mintmusic.co.uk/2022/03/all-too-well-taylors-version-taylor.html?lr=1771654237608\", waiting until \"domcontentloaded\"\u001b[22m\n"}
+{"timestamp":"2026-02-23T04:35:26.190Z","run_id":"1771821307645-8304","row_key":"23","site_name":"Accountx","action":"navigate","status":"retrying","error_message":"attempt 2: page.goto: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-23T04:35:26.196Z","run_id":"1771821307645-8304","row_key":"23","site_name":"Accountx","action":"target_failed","status":"failed","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771821307645-8304\\accountx-23\\pre_submit_1_failed.png","error_message":"page.goto: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-23T04:35:26.215Z","run_id":"1771821307645-8304","row_key":"23","site_name":"Accountx","action":"target_processed","status":"failed","error_message":"https://accountx.in/ :: page.goto: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-23T04:35:26.463Z","run_id":"1771821307645-8304","action":"run_end","status":"completed"}

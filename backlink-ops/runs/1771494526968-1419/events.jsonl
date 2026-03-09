@@ -1,0 +1,9 @@
+{"timestamp":"2026-02-19T09:48:52.672Z","run_id":"1771494526968-1419","action":"run_start","status":"running"}
+{"timestamp":"2026-02-19T09:48:52.680Z","run_id":"1771494526968-1419","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-19T09:48:52.996Z","run_id":"1771494526968-1419","row_key":"3","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-19T09:48:53.003Z","run_id":"1771494526968-1419","row_key":"3","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-19T09:48:55.435Z","run_id":"1771494526968-1419","row_key":"3","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-19T09:50:04.012Z","run_id":"1771494526968-1419","row_key":"3","site_name":"Accountx","action":"approval_checkpoint","status":"approved","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771494526968-1419\\accountx-3\\pre_submit_1.png","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-19T09:50:04.019Z","run_id":"1771494526968-1419","row_key":"3","site_name":"Accountx","action":"target_failed","status":"failed","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771494526968-1419\\accountx-3\\pre_submit_1_failed.png","error_message":"locator.click: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-19T09:50:04.033Z","run_id":"1771494526968-1419","row_key":"3","site_name":"Accountx","action":"target_processed","status":"failed","error_message":"https://accountx.in/ :: locator.click: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-19T09:50:04.259Z","run_id":"1771494526968-1419","action":"run_end","status":"completed"}

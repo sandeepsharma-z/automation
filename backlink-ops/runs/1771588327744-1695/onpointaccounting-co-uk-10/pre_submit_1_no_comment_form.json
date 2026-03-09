@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T11:53:29.375Z",
+  "step": "no_comment_form_detected",
+  "status": "skipped",
+  "row_key": "10",
+  "site_name": "onpointaccounting.co.uk",
+  "target_link": "https://onpointaccounting.co.uk/blogs",
+  "final_url": "https://onpointaccounting.co.uk/blogs/",
+  "page_title": "Top Accounting and Bookkeeping Blogs with OnPoint Accounting",
+  "message": "Skipped: no comment form detected (not a blog commenting target)"
+}

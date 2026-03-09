@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-19T08:22:08.082Z","run_id":"1771489325382-7904","action":"run_start","status":"running"}
+{"timestamp":"2026-02-19T08:22:08.087Z","run_id":"1771489325382-7904","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-19T08:22:08.315Z","run_id":"1771489325382-7904","row_key":"3","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-19T08:22:08.322Z","run_id":"1771489325382-7904","row_key":"3","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-19T08:22:10.109Z","run_id":"1771489325382-7904","row_key":"3","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-19T08:52:10.518Z","run_id":"1771489325382-7904","row_key":"3","site_name":"Accountx","action":"approval_checkpoint","status":"denied","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771489325382-7904\\accountx-3\\pre_submit_1.png","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-19T08:52:10.566Z","run_id":"1771489325382-7904","row_key":"3","site_name":"Accountx","action":"target_processed","status":"skipped","error_message":"https://accountx.in/ :: Operator declined submission."}
+{"timestamp":"2026-02-19T08:52:10.737Z","run_id":"1771489325382-7904","action":"run_end","status":"completed"}

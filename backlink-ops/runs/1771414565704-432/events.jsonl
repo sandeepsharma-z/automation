@@ -1,0 +1,6 @@
+{"timestamp":"2026-02-18T11:36:08.856Z","run_id":"1771414565704-432","action":"run_start","status":"running"}
+{"timestamp":"2026-02-18T11:36:08.862Z","run_id":"1771414565704-432","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-18T11:36:09.154Z","run_id":"1771414565704-432","row_key":"2","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-18T11:36:09.162Z","run_id":"1771414565704-432","row_key":"2","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-18T11:36:09.174Z","run_id":"1771414565704-432","row_key":"2","site_name":"Accountx","action":"target_processed","status":"pending_verification","error_message":"https://accountx.in/ :: Outreach email workflow: draft + CRM tracking only (no Playwright submit)."}
+{"timestamp":"2026-02-18T11:36:09.314Z","run_id":"1771414565704-432","action":"run_end","status":"completed"}

@@ -1,0 +1,9 @@
+{"timestamp":"2026-02-20T06:23:35.080Z","run_id":"1771568609439-9511","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T06:23:35.098Z","run_id":"1771568609439-9511","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T06:23:35.560Z","run_id":"1771568609439-9511","row_key":"5","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-20T06:23:35.570Z","run_id":"1771568609439-9511","row_key":"5","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T06:23:55.990Z","run_id":"1771568609439-9511","row_key":"5","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T06:25:55.876Z","run_id":"1771568609439-9511","row_key":"5","site_name":"Accountx","action":"approval_checkpoint","status":"approved","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771568609439-9511\\accountx-5\\pre_submit_1.png","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T06:25:58.598Z","run_id":"1771568609439-9511","row_key":"5","site_name":"Accountx","action":"post_submit_state","status":"pending_verification","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771568609439-9511\\accountx-5\\pre_submit_1_post_submit.png","error_message":"Comment submit appears in-progress (AJAX busy state); likely awaiting processing/moderation."}
+{"timestamp":"2026-02-20T06:25:58.657Z","run_id":"1771568609439-9511","row_key":"5","site_name":"Accountx","action":"target_processed","status":"pending_verification","error_message":"https://accountx.in/ :: Comment submit appears in-progress (AJAX busy state); likely awaiting processing/moderation."}
+{"timestamp":"2026-02-20T06:25:59.074Z","run_id":"1771568609439-9511","action":"run_end","status":"completed"}

@@ -1,0 +1,6 @@
+{"timestamp":"2026-02-21T06:44:32.164Z","run_id":"1771656267739-8234","action":"run_start","status":"running"}
+{"timestamp":"2026-02-21T06:44:32.174Z","run_id":"1771656267739-8234","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-21T06:44:32.581Z","run_id":"1771656267739-8234","row_key":"22","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-21T06:44:32.591Z","run_id":"1771656267739-8234","row_key":"22","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-21T06:45:34.707Z","run_id":"1771656267739-8234","row_key":"22","site_name":"Accountx","action":"navigate","status":"retrying","error_message":"attempt 1: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://alaafiaafrc.org/adtc/how-to-make-your-blog-and-social-media-accounts-work-together/\", waiting until \"domcontentloaded\"\u001b[22m\n"}
+{"timestamp":"2026-02-21T06:46:10.058Z","run_id":"1771656267739-8234","row_key":"22","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}

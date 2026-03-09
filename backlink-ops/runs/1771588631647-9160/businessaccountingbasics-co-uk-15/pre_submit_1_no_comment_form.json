@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T11:58:05.923Z",
+  "step": "no_comment_form_detected",
+  "status": "skipped",
+  "row_key": "15",
+  "site_name": "businessaccountingbasics.co.uk",
+  "target_link": "https://www.businessaccountingbasics.co.uk/bookkeeping-blog",
+  "final_url": "https://www.businessaccountingbasics.co.uk/bookkeeping-blog/",
+  "page_title": "Accounting And Bookkeeping Blog For Small Business",
+  "message": "Skipped: no comment form detected (not a blog commenting target)"
+}

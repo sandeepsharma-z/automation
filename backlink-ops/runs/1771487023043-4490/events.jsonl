@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-19T07:43:49.272Z","run_id":"1771487023043-4490","action":"run_start","status":"running"}
+{"timestamp":"2026-02-19T07:43:49.284Z","run_id":"1771487023043-4490","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-19T07:43:49.714Z","run_id":"1771487023043-4490","row_key":"2","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-19T07:43:49.721Z","run_id":"1771487023043-4490","row_key":"2","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-19T07:44:13.027Z","run_id":"1771487023043-4490","row_key":"2","site_name":"Accountx","action":"selector_mapping_open","status":"running"}
+{"timestamp":"2026-02-19T07:44:35.160Z","run_id":"1771487023043-4490","row_key":"2","site_name":"Accountx","action":"selector_mapping_saved","status":"ok","error_message":"comment_box, name, email, website, submit"}
+{"timestamp":"2026-02-19T07:44:35.776Z","run_id":"1771487023043-4490","row_key":"2","site_name":"Accountx","action":"mapping_check","status":"needs_manual_mapping","error_message":"needs_manual_mapping:1 | Missing fields: [], selectors: [site_url, address]"}
+{"timestamp":"2026-02-19T07:44:35.928Z","run_id":"1771487023043-4490","action":"run_end","status":"completed"}

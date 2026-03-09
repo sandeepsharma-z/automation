@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T07:09:36.675Z",
+  "step": "post_submit_state",
+  "status": "submitted",
+  "row_key": "6",
+  "site_name": "Accountx",
+  "target_link": "https://accountx.in/",
+  "final_url": "https://alaafiaafrc.org/adtc/wp-comments-post.php",
+  "page_title": "Comment Submission Failure",
+  "message": "Post-submit URL changed, likely submission completed."
+}

@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-21T07:46:07.788Z",
+  "step": "target_failed",
+  "status": "failed",
+  "row_key": "22",
+  "site_name": "Accountx",
+  "target_link": "https://accountx.in/",
+  "final_url": "https://alaafiaafrc.org/adtc/how-to-make-your-blog-and-social-media-accounts-work-together/",
+  "page_title": "How to make your blog and social media accounts work together – Alaafia Digital Training Center",
+  "message": "page.evaluate: Execution context was destroyed, most likely because of a navigation"
+}

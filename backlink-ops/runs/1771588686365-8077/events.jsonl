@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T11:58:09.842Z","run_id":"1771588686365-8077","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:58:09.852Z","run_id":"1771588686365-8077","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:58:10.213Z","run_id":"1771588686365-8077","row_key":"16","site_name":"conceptaccountancy.co.uk","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:58:10.228Z","run_id":"1771588686365-8077","row_key":"16","site_name":"conceptaccountancy.co.uk","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:58:32.615Z","run_id":"1771588686365-8077","row_key":"16","site_name":"conceptaccountancy.co.uk","action":"navigate","status":"ok","error_message":"https://conceptaccountancy.co.uk/top-accounting-blogs"}
+{"timestamp":"2026-02-20T11:58:55.210Z","run_id":"1771588686365-8077","row_key":"16","site_name":"conceptaccountancy.co.uk","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588686365-8077\\conceptaccountancy-co-uk-16\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:58:55.308Z","run_id":"1771588686365-8077","row_key":"16","site_name":"conceptaccountancy.co.uk","action":"target_processed","status":"skipped","error_message":"https://conceptaccountancy.co.uk/top-accounting-blogs :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:58:55.814Z","run_id":"1771588686365-8077","action":"run_end","status":"completed"}

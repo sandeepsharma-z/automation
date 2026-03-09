@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T05:26:55.840Z","run_id":"manualtest-1771565208134","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T05:26:55.855Z","run_id":"manualtest-1771565208134","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T05:26:56.428Z","run_id":"manualtest-1771565208134","row_key":"5","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-20T05:26:56.439Z","run_id":"manualtest-1771565208134","row_key":"5","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T05:27:08.387Z","run_id":"manualtest-1771565208134","row_key":"5","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T05:27:37.716Z","run_id":"manualtest-1771565208134","row_key":"5","site_name":"Accountx","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565208134\\accountx-5\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T05:27:37.766Z","run_id":"manualtest-1771565208134","row_key":"5","site_name":"Accountx","action":"target_processed","status":"skipped","error_message":"https://accountx.in/ :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T05:27:38.082Z","run_id":"manualtest-1771565208134","action":"run_end","status":"completed"}

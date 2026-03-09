@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T11:55:29.533Z","run_id":"1771588524957-2780","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:55:29.543Z","run_id":"1771588524957-2780","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:55:29.936Z","run_id":"1771588524957-2780","row_key":"13","site_name":"thebusinessbookkeeper.co.uk","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:55:29.946Z","run_id":"1771588524957-2780","row_key":"13","site_name":"thebusinessbookkeeper.co.uk","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:55:49.241Z","run_id":"1771588524957-2780","row_key":"13","site_name":"thebusinessbookkeeper.co.uk","action":"navigate","status":"ok","error_message":"https://thebusinessbookkeeper.co.uk/blog"}
+{"timestamp":"2026-02-20T11:56:09.199Z","run_id":"1771588524957-2780","row_key":"13","site_name":"thebusinessbookkeeper.co.uk","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588524957-2780\\thebusinessbookkeeper-co-uk-13\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:56:09.244Z","run_id":"1771588524957-2780","row_key":"13","site_name":"thebusinessbookkeeper.co.uk","action":"target_processed","status":"skipped","error_message":"https://thebusinessbookkeeper.co.uk/blog :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:56:09.542Z","run_id":"1771588524957-2780","action":"run_end","status":"completed"}

@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T12:00:03.066Z",
+  "step": "no_comment_form_detected",
+  "status": "skipped",
+  "row_key": "17",
+  "site_name": "genzed.co.uk",
+  "target_link": "https://genzed.co.uk/blogs",
+  "final_url": "https://genzed.co.uk/blogs/",
+  "page_title": "Accounting & Bookkeeping Insights & Tips | GenZed Blogs",
+  "message": "Skipped: no comment form detected (not a blog commenting target)"
+}

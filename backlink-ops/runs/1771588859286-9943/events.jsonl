@@ -1,0 +1,5 @@
+{"timestamp":"2026-02-20T12:01:05.172Z","run_id":"1771588859286-9943","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T12:01:05.226Z","run_id":"1771588859286-9943","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T12:01:06.088Z","run_id":"1771588859286-9943","row_key":"19","site_name":"123financials.com","action":"start","status":"running"}
+{"timestamp":"2026-02-20T12:01:06.097Z","run_id":"1771588859286-9943","row_key":"19","site_name":"123financials.com","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T12:01:47.250Z","run_id":"1771588859286-9943","row_key":"19","site_name":"123financials.com","action":"navigate","status":"ok","error_message":"https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers"}

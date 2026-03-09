@@ -1,0 +1,65 @@
+{
+  "row_key": "21",
+  "site_slug": "blog-youtube-21",
+  "run_id": "1771655582138-9291",
+  "workflow_type": "blog_commenting",
+  "input": {
+    "row_key": "21",
+    "backlink_type": "blog_commenting",
+    "site_name": "blog.youtube",
+    "default_website_url": "",
+    "directory_url": "https://blog.youtube/",
+    "site_url": "https://blog.youtube/",
+    "username": "",
+    "email": "",
+    "password": "",
+    "company_name": "",
+    "company_address": "",
+    "company_phone": "",
+    "company_description": "",
+    "target_links": [
+      "https://blog.youtube/"
+    ],
+    "target_link": "https://blog.youtube/",
+    "anchor_text": "",
+    "category": "",
+    "notes": "finder_meta:{\"source\":\"finder\",\"keyword\":\"uk book keeping\",\"query\":\"inurl:comment \\\"leave a reply\\\" uk book keeping\",\"engine\":\"bing\",\"collected_at\":\"2026-02-20T11:29:36.995Z\",\"normalized_url\":\"https://blog.youtube/\"}",
+    "tags": [
+      "finder",
+      "bing"
+    ],
+    "credentials": {
+      "username": "",
+      "email": "",
+      "password": ""
+    },
+    "business_profile": {
+      "company_name": "",
+      "company_address": "",
+      "company_phone": "",
+      "company_description": ""
+    },
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "row_started",
+    "run_id": "1771655582136-3468",
+    "started_at": "2026-02-21T06:33:02.136Z",
+    "completed_at": "",
+    "screenshot_url": "",
+    "created_at": "2026-02-20T11:49:34.746Z",
+    "__rowKey": "21"
+  },
+  "output": {
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "",
+    "run_id": "1771655582138-9291",
+    "started_at": "2026-02-21T06:33:02.136Z",
+    "completed_at": "",
+    "screenshot_url": ""
+  }
+}

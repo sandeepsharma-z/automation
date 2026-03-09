@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T11:59:00.794Z","run_id":"1771588735873-8431","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:59:00.808Z","run_id":"1771588735873-8431","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:59:01.282Z","run_id":"1771588735873-8431","row_key":"17","site_name":"genzed.co.uk","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:59:01.295Z","run_id":"1771588735873-8431","row_key":"17","site_name":"genzed.co.uk","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:59:41.924Z","run_id":"1771588735873-8431","row_key":"17","site_name":"genzed.co.uk","action":"navigate","status":"ok","error_message":"https://genzed.co.uk/blogs"}
+{"timestamp":"2026-02-20T12:00:03.070Z","run_id":"1771588735873-8431","row_key":"17","site_name":"genzed.co.uk","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588735873-8431\\genzed-co-uk-17\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T12:00:03.135Z","run_id":"1771588735873-8431","row_key":"17","site_name":"genzed.co.uk","action":"target_processed","status":"skipped","error_message":"https://genzed.co.uk/blogs :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T12:00:03.492Z","run_id":"1771588735873-8431","action":"run_end","status":"completed"}

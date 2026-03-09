@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T11:53:35.144Z","run_id":"1771588409889-2444","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:53:35.158Z","run_id":"1771588409889-2444","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:53:35.702Z","run_id":"1771588409889-2444","row_key":"11","site_name":"accountingweb.co.uk","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:53:35.727Z","run_id":"1771588409889-2444","row_key":"11","site_name":"accountingweb.co.uk","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:54:14.941Z","run_id":"1771588409889-2444","row_key":"11","site_name":"accountingweb.co.uk","action":"navigate","status":"ok","error_message":"https://www.accountingweb.co.uk/community-voice/blogs"}
+{"timestamp":"2026-02-20T11:54:37.021Z","run_id":"1771588409889-2444","row_key":"11","site_name":"accountingweb.co.uk","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588409889-2444\\accountingweb-co-uk-11\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:54:37.173Z","run_id":"1771588409889-2444","row_key":"11","site_name":"accountingweb.co.uk","action":"target_processed","status":"skipped","error_message":"https://www.accountingweb.co.uk/community-voice/blogs :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:54:38.022Z","run_id":"1771588409889-2444","action":"run_end","status":"completed"}

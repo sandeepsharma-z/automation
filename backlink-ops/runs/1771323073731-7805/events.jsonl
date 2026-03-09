@@ -1,0 +1,2 @@
+{"timestamp":"2026-02-17T10:11:17.953Z","run_id":"1771323073731-7805","action":"run_start","status":"running"}
+{"timestamp":"2026-02-17T10:11:17.957Z","run_id":"1771323073731-7805","action":"fatal","status":"failed","error_message":"Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_PRIVATE_KEY"}

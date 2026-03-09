@@ -1,0 +1,79 @@
+{
+  "row_key": "15",
+  "site_slug": "businessaccountingbasics-co-uk-15",
+  "run_id": "1771588631647-9160",
+  "workflow_type": "blog_commenting",
+  "input": {
+    "row_key": "15",
+    "backlink_type": "blog_commenting",
+    "site_name": "businessaccountingbasics.co.uk",
+    "default_website_url": "",
+    "directory_url": "https://www.businessaccountingbasics.co.uk/bookkeeping-blog",
+    "site_url": "https://www.businessaccountingbasics.co.uk/bookkeeping-blog",
+    "username": "",
+    "email": "",
+    "password": "",
+    "company_name": "",
+    "company_address": "",
+    "company_phone": "",
+    "company_description": "",
+    "target_links": [
+      "https://www.businessaccountingbasics.co.uk/bookkeeping-blog"
+    ],
+    "target_link": "https://www.businessaccountingbasics.co.uk/bookkeeping-blog",
+    "anchor_text": "",
+    "category": "",
+    "notes": "finder_meta:{\"source\":\"finder\",\"keyword\":\"uk book keeping\",\"query\":\"uk book keeping blog comment\",\"engine\":\"duckduckgo\",\"collected_at\":\"2026-02-20T11:29:36.995Z\",\"normalized_url\":\"https://www.businessaccountingbasics.co.uk/bookkeeping-blog\"}",
+    "tags": [
+      "finder",
+      "duckduckgo"
+    ],
+    "credentials": {
+      "username": "",
+      "email": "",
+      "password": ""
+    },
+    "business_profile": {
+      "company_name": "",
+      "company_address": "",
+      "company_phone": "",
+      "company_description": ""
+    },
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "row_started",
+    "run_id": "1771588631645-654",
+    "started_at": "2026-02-20T11:57:11.645Z",
+    "completed_at": "",
+    "screenshot_url": "",
+    "created_at": "2026-02-20T11:49:34.701Z",
+    "__rowKey": "15"
+  },
+  "output": {
+    "results": [
+      {
+        "target_link": "https://www.businessaccountingbasics.co.uk/bookkeeping-blog",
+        "created_link": "",
+        "result_title": "",
+        "status": "skipped",
+        "status_reason": "Skipped: no comment form detected (not a blog commenting target)",
+        "artifacts": [
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588631647-9160\\businessaccountingbasics-co-uk-15\\pre_submit_1_no_comment_form.png",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588631647-9160\\businessaccountingbasics-co-uk-15\\pre_submit_1_no_comment_form.html",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588631647-9160\\businessaccountingbasics-co-uk-15\\pre_submit_1_no_comment_form.json"
+        ],
+        "updated_at": "2026-02-20T11:58:05.929Z"
+      }
+    ],
+    "result_title": "",
+    "created_link": "",
+    "status": "skipped",
+    "status_reason": "skipped:1 | Skipped: no comment form detected (not a blog commenting target)",
+    "run_id": "1771588631647-9160",
+    "started_at": "2026-02-20T11:57:11.645Z",
+    "completed_at": "2026-02-20T11:58:05.990Z",
+    "screenshot_url": "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588631647-9160\\businessaccountingbasics-co-uk-15\\pre_submit_1_no_comment_form.png"
+  }
+}

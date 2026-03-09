@@ -1,0 +1,9 @@
+{"timestamp":"2026-02-20T05:35:13.646Z","run_id":"manualtest-1771565709310","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T05:35:13.654Z","run_id":"manualtest-1771565709310","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T05:35:14.100Z","run_id":"manualtest-1771565709310","row_key":"5","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-20T05:35:14.111Z","run_id":"manualtest-1771565709310","row_key":"5","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T05:35:28.179Z","run_id":"manualtest-1771565709310","row_key":"5","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T05:37:29.738Z","run_id":"manualtest-1771565709310","row_key":"5","site_name":"Accountx","action":"approval_checkpoint","status":"approved","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565709310\\accountx-5\\pre_submit_1.png","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T05:37:32.934Z","run_id":"manualtest-1771565709310","row_key":"5","site_name":"Accountx","action":"post_submit_state","status":"unknown","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565709310\\accountx-5\\pre_submit_1_post_submit.png","error_message":"No clear submit confirmation detected."}
+{"timestamp":"2026-02-20T05:37:33.014Z","run_id":"manualtest-1771565709310","row_key":"5","site_name":"Accountx","action":"target_processed","status":"failed","error_message":"https://accountx.in/ :: No clear submit confirmation detected."}
+{"timestamp":"2026-02-20T05:37:33.441Z","run_id":"manualtest-1771565709310","action":"run_end","status":"completed"}

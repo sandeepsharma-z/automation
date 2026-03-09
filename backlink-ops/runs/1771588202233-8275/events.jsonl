@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T11:50:08.484Z","run_id":"1771588202233-8275","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:50:08.503Z","run_id":"1771588202233-8275","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:50:08.955Z","run_id":"1771588202233-8275","row_key":"8","site_name":"bloggers.feedspot.com","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:50:08.973Z","run_id":"1771588202233-8275","row_key":"8","site_name":"bloggers.feedspot.com","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:50:26.240Z","run_id":"1771588202233-8275","row_key":"8","site_name":"bloggers.feedspot.com","action":"navigate","status":"ok","error_message":"https://bloggers.feedspot.com/uk_bookkeeping_blogs"}
+{"timestamp":"2026-02-20T11:50:49.476Z","run_id":"1771588202233-8275","row_key":"8","site_name":"bloggers.feedspot.com","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588202233-8275\\bloggers-feedspot-com-8\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:50:49.527Z","run_id":"1771588202233-8275","row_key":"8","site_name":"bloggers.feedspot.com","action":"target_processed","status":"skipped","error_message":"https://bloggers.feedspot.com/uk_bookkeeping_blogs :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:50:49.938Z","run_id":"1771588202233-8275","action":"run_end","status":"completed"}

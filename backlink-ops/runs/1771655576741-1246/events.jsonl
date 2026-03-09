@@ -1,0 +1,5 @@
+{"timestamp":"2026-02-21T06:33:01.582Z","run_id":"1771655576741-1246","action":"run_start","status":"running"}
+{"timestamp":"2026-02-21T06:33:01.592Z","run_id":"1771655576741-1246","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-21T06:33:01.927Z","run_id":"1771655576741-1246","row_key":"20","site_name":"aveonservices.com","action":"start","status":"running"}
+{"timestamp":"2026-02-21T06:33:01.936Z","run_id":"1771655576741-1246","row_key":"20","site_name":"aveonservices.com","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-21T06:33:02.104Z","run_id":"1771655576741-1246","action":"fatal","status":"failed","error_message":"normalizeHost is not defined"}

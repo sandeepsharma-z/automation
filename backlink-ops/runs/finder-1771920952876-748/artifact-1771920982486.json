@@ -1,0 +1,7 @@
+{
+  "run_id": "1771920952876-748",
+  "captured_at": "2026-02-24T08:16:26.136Z",
+  "url": "https://www.bing.com/search?q=inurl%3Ablog%20%22leave%20a%20reply%22%20uk%20accounting%20suppport&count=50&first=41&setlang=en-US&cc=GB&ensearch=1&rdr=1&rdrig=DAF30B505D9D410FB24F86CA16A28C8C",
+  "type": "run_failed",
+  "error": "Cannot access 'score' before initialization"
+}

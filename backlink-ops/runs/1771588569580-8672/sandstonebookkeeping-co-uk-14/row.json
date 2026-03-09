@@ -1,0 +1,79 @@
+{
+  "row_key": "14",
+  "site_slug": "sandstonebookkeeping-co-uk-14",
+  "run_id": "1771588569580-8672",
+  "workflow_type": "blog_commenting",
+  "input": {
+    "row_key": "14",
+    "backlink_type": "blog_commenting",
+    "site_name": "sandstonebookkeeping.co.uk",
+    "default_website_url": "",
+    "directory_url": "https://sandstonebookkeeping.co.uk/blog",
+    "site_url": "https://sandstonebookkeeping.co.uk/blog",
+    "username": "",
+    "email": "",
+    "password": "",
+    "company_name": "",
+    "company_address": "",
+    "company_phone": "",
+    "company_description": "",
+    "target_links": [
+      "https://sandstonebookkeeping.co.uk/blog"
+    ],
+    "target_link": "https://sandstonebookkeeping.co.uk/blog",
+    "anchor_text": "",
+    "category": "",
+    "notes": "finder_meta:{\"source\":\"finder\",\"keyword\":\"uk book keeping\",\"query\":\"uk book keeping blog comment\",\"engine\":\"duckduckgo\",\"collected_at\":\"2026-02-20T11:29:36.995Z\",\"normalized_url\":\"https://sandstonebookkeeping.co.uk/blog\"}",
+    "tags": [
+      "finder",
+      "duckduckgo"
+    ],
+    "credentials": {
+      "username": "",
+      "email": "",
+      "password": ""
+    },
+    "business_profile": {
+      "company_name": "",
+      "company_address": "",
+      "company_phone": "",
+      "company_description": ""
+    },
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "row_started",
+    "run_id": "1771588569578-1076",
+    "started_at": "2026-02-20T11:56:09.578Z",
+    "completed_at": "",
+    "screenshot_url": "",
+    "created_at": "2026-02-20T11:49:34.693Z",
+    "__rowKey": "14"
+  },
+  "output": {
+    "results": [
+      {
+        "target_link": "https://sandstonebookkeeping.co.uk/blog",
+        "created_link": "",
+        "result_title": "",
+        "status": "skipped",
+        "status_reason": "Skipped: no comment form detected (not a blog commenting target)",
+        "artifacts": [
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588569580-8672\\sandstonebookkeeping-co-uk-14\\pre_submit_1_no_comment_form.png",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588569580-8672\\sandstonebookkeeping-co-uk-14\\pre_submit_1_no_comment_form.html",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588569580-8672\\sandstonebookkeeping-co-uk-14\\pre_submit_1_no_comment_form.json"
+        ],
+        "updated_at": "2026-02-20T11:57:11.226Z"
+      }
+    ],
+    "result_title": "",
+    "created_link": "",
+    "status": "skipped",
+    "status_reason": "skipped:1 | Skipped: no comment form detected (not a blog commenting target)",
+    "run_id": "1771588569580-8672",
+    "started_at": "2026-02-20T11:56:09.578Z",
+    "completed_at": "2026-02-20T11:57:11.280Z",
+    "screenshot_url": "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588569580-8672\\sandstonebookkeeping-co-uk-14\\pre_submit_1_no_comment_form.png"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-23T06:52:07.354Z",
+  "step": "access_required",
+  "status": "access_required",
+  "row_key": "23",
+  "site_name": "Accountx",
+  "target_link": "https://accountx.in/",
+  "final_url": "https://www.blogger.com/browser-not-supported/?ref=/",
+  "page_title": "Browser no longer supported",
+  "message": "access_required"
+}

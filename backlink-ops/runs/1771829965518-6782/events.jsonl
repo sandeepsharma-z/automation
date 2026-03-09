@@ -1,0 +1,10 @@
+{"timestamp":"2026-02-23T06:59:28.305Z","run_id":"1771829965518-6782","action":"run_start","status":"running"}
+{"timestamp":"2026-02-23T06:59:28.312Z","run_id":"1771829965518-6782","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-23T06:59:28.589Z","run_id":"1771829965518-6782","row_key":"19","site_name":"123financials.com","action":"start","status":"running"}
+{"timestamp":"2026-02-23T06:59:28.594Z","run_id":"1771829965518-6782","row_key":"19","site_name":"123financials.com","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-23T07:00:09.602Z","run_id":"1771829965518-6782","row_key":"19","site_name":"123financials.com","action":"navigate","status":"ok","error_message":"https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers"}
+{"timestamp":"2026-02-23T07:00:21.923Z","run_id":"1771829965518-6782","row_key":"19","site_name":"123financials.com","action":"adaptive_stage","status":"running","error_message":"start driver=openclaw"}
+{"timestamp":"2026-02-23T07:00:27.418Z","run_id":"1771829965518-6782","row_key":"19","site_name":"123financials.com","action":"adaptive_stage","status":"failed","error_message":"form_not_found reason=no_form_detected"}
+{"timestamp":"2026-02-23T07:00:28.921Z","run_id":"1771829965518-6782","row_key":"19","site_name":"123financials.com","action":"needs_manual_mapping","status":"needs_manual_mapping","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771829965518-6782\\123financials-com-19\\comment_needs_manual_mapping.png","error_message":"no_form_detected"}
+{"timestamp":"2026-02-23T07:00:28.986Z","run_id":"1771829965518-6782","row_key":"19","site_name":"123financials.com","action":"target_processed","status":"needs_manual_mapping","error_message":"https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers :: no_form_detected"}
+{"timestamp":"2026-02-23T07:00:29.391Z","run_id":"1771829965518-6782","action":"run_end","status":"completed"}

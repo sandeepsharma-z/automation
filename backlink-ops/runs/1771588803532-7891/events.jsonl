@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T12:00:08.099Z","run_id":"1771588803532-7891","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T12:00:08.111Z","run_id":"1771588803532-7891","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T12:00:08.606Z","run_id":"1771588803532-7891","row_key":"18","site_name":"kingsbridge.co.uk","action":"start","status":"running"}
+{"timestamp":"2026-02-20T12:00:08.614Z","run_id":"1771588803532-7891","row_key":"18","site_name":"kingsbridge.co.uk","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T12:00:27.561Z","run_id":"1771588803532-7891","row_key":"18","site_name":"kingsbridge.co.uk","action":"navigate","status":"ok","error_message":"https://www.kingsbridge.co.uk/blog/partners/partner-news/blogs-for-accountants"}
+{"timestamp":"2026-02-20T12:00:58.687Z","run_id":"1771588803532-7891","row_key":"18","site_name":"kingsbridge.co.uk","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588803532-7891\\kingsbridge-co-uk-18\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T12:00:58.753Z","run_id":"1771588803532-7891","row_key":"18","site_name":"kingsbridge.co.uk","action":"target_processed","status":"skipped","error_message":"https://www.kingsbridge.co.uk/blog/partners/partner-news/blogs-for-accountants :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T12:00:59.235Z","run_id":"1771588803532-7891","action":"run_end","status":"completed"}

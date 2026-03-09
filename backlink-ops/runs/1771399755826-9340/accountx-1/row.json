@@ -1,0 +1,82 @@
+{
+  "row_key": "1",
+  "site_slug": "accountx-1",
+  "run_id": "1771399755826-9340",
+  "workflow_type": "business_directory",
+  "input": {
+    "row_key": "1",
+    "backlink_type": "blog commenting",
+    "site_name": "Accountx",
+    "default_website_url": "https://accountx.in",
+    "directory_url": "https://blogs.city.ac.uk/sustainable-city/2017/11/14/vegan-friendly-no-cook-chocolate-cake-it-exists/",
+    "site_url": "https://blogs.city.ac.uk/sustainable-city/2017/11/14/vegan-friendly-no-cook-chocolate-cake-it-exists/",
+    "username": "accountx01",
+    "email": "accx.seo@gmail.com",
+    "password": "accountx.in@123",
+    "company_name": "Accountx",
+    "company_address": "B-9, 2nd Floor, Sector 2 Noida - 201301",
+    "company_phone": "+91 75039 85039",
+    "company_description": "AccounTX welcomes you as your trusted ally for the Outsourced Finance Function. For over a decade, we've reshaped the landscape of Finance Outsourcing, aiming to turn it from a mere business necessity into a strategic advantage. We believe implementing processes and internal financial controls empowers businesses to achieve unparalleled success and make a lasting global impact. Our dedicated team is passionate about efficiency and committed to delivering top-notch financial solutions tailored to your unique needs.\n\nWe assist businesses with comprehensive accounting services in India and globally, ensuring accurate books, compliant reporting, and smooth financial operations. Our bookkeeping services are designed for startups, SMEs, and growing companies that need dependable  financial management. For entrepreneurs preparing to launch a new venture, we provide complete company registration support, including private limited company registration and other business structures. Whether you require company registration in India or an end-to-end business setup in India, our team ensures a seamless, fully compliant experience from start to finish.\n\nThrough our Global Desk, we assist clients in establishing and managing businesses worldwide from India, offering a cost advantage for their accounting, tax, and compliance requirements. Our dream team of Accountants, Financial Analysts, Tax Experts, and Compliance Specialists ensures they effectively address every aspect of their Finance Outsourcing needs. We don't just provide outsourcing solutions; we’re extensions of our clients' teams, collaborating to achieve their business goals.\n\nAccounTX stands as your reliable partner in an ever-evolving business landscape. Transparency forms the bedrock of our client relationships. Whether you’re a small setup or a large enterprise, we possess the expertise, dedication, and technology to elevate your financial processes to new heights.",
+    "target_links": [
+      "https://accountx.in/about-us/"
+    ],
+    "target_link": "https://accountx.in/about-us/",
+    "anchor_text": "",
+    "category": "Blog Commenting",
+    "notes": "Great insights on financial management and compliance. Many growing businesses struggle with structured accounting processes and internal controls.\n\nFor companies looking for reliable accounting services, bookkeeping, tax compliance, and company registration support in India, AccounTX provides end-to-end outsourced finance solutions.\n\nYou can explore more here: https://accountx.in/",
+    "tags": [],
+    "credentials": {
+      "username": "accountx01",
+      "email": "accx.seo@gmail.com",
+      "password": "accountx.in@123"
+    },
+    "business_profile": {
+      "company_name": "Accountx",
+      "company_address": "B-9, 2nd Floor, Sector 2 Noida - 201301",
+      "company_phone": "+91 75039 85039",
+      "company_description": "AccounTX welcomes you as your trusted ally for the Outsourced Finance Function. For over a decade, we've reshaped the landscape of Finance Outsourcing, aiming to turn it from a mere business necessity into a strategic advantage. We believe implementing processes and internal financial controls empowers businesses to achieve unparalleled success and make a lasting global impact. Our dedicated team is passionate about efficiency and committed to delivering top-notch financial solutions tailored to your unique needs.\n\nWe assist businesses with comprehensive accounting services in India and globally, ensuring accurate books, compliant reporting, and smooth financial operations. Our bookkeeping services are designed for startups, SMEs, and growing companies that need dependable  financial management. For entrepreneurs preparing to launch a new venture, we provide complete company registration support, including private limited company registration and other business structures. Whether you require company registration in India or an end-to-end business setup in India, our team ensures a seamless, fully compliant experience from start to finish.\n\nThrough our Global Desk, we assist clients in establishing and managing businesses worldwide from India, offering a cost advantage for their accounting, tax, and compliance requirements. Our dream team of Accountants, Financial Analysts, Tax Experts, and Compliance Specialists ensures they effectively address every aspect of their Finance Outsourcing needs. We don't just provide outsourcing solutions; we’re extensions of our clients' teams, collaborating to achieve their business goals.\n\nAccounTX stands as your reliable partner in an ever-evolving business landscape. Transparency forms the bedrock of our client relationships. Whether you’re a small setup or a large enterprise, we possess the expertise, dedication, and technology to elevate your financial processes to new heights."
+    },
+    "results": [
+      {
+        "target_link": "https://accountx.in/about-us/",
+        "created_link": "",
+        "result_title": "Outreach Draft Prepared",
+        "status": "pending_verification",
+        "status_reason": "Outreach email workflow: draft + CRM tracking only (no Playwright submit).",
+        "artifacts": [],
+        "updated_at": "2026-02-18T07:29:20.047Z"
+      }
+    ],
+    "result_title": "Outreach Draft Prepared",
+    "created_link": "",
+    "status": "pending_verification",
+    "status_reason": "pending_verification:1",
+    "run_id": "1771399754679-7850",
+    "started_at": "2026-02-18T07:29:17.814Z",
+    "completed_at": "2026-02-18T07:29:20.090Z",
+    "screenshot_url": "",
+    "created_at": "2026-02-18T05:15:37.387Z",
+    "__rowKey": "1"
+  },
+  "output": {
+    "results": [
+      {
+        "target_link": "https://accountx.in/about-us/",
+        "created_link": "",
+        "result_title": "Outreach Draft Prepared",
+        "status": "pending_verification",
+        "status_reason": "Outreach email workflow: draft + CRM tracking only (no Playwright submit).",
+        "artifacts": [],
+        "updated_at": "2026-02-18T07:29:21.800Z"
+      }
+    ],
+    "result_title": "Outreach Draft Prepared",
+    "created_link": "",
+    "status": "pending_verification",
+    "status_reason": "pending_verification:1",
+    "run_id": "1771399755826-9340",
+    "started_at": "2026-02-18T07:29:17.814Z",
+    "completed_at": "2026-02-18T07:29:21.851Z",
+    "screenshot_url": ""
+  }
+}

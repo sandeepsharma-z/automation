@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T12:00:58.684Z",
+  "step": "no_comment_form_detected",
+  "status": "skipped",
+  "row_key": "18",
+  "site_name": "kingsbridge.co.uk",
+  "target_link": "https://www.kingsbridge.co.uk/blog/partners/partner-news/blogs-for-accountants",
+  "final_url": "https://www.kingsbridge.co.uk/blog/partners/partner-news/blogs-for-accountants/",
+  "page_title": "The best industry blogs for accountants to read",
+  "message": "Skipped: no comment form detected (not a blog commenting target)"
+}

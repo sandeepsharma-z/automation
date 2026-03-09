@@ -1,0 +1,10 @@
+{"timestamp":"2026-02-23T06:07:11.303Z","run_id":"1771826828040-8059","action":"run_start","status":"running"}
+{"timestamp":"2026-02-23T06:07:11.312Z","run_id":"1771826828040-8059","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-23T06:07:11.626Z","run_id":"1771826828040-8059","row_key":"23","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-23T06:07:11.632Z","run_id":"1771826828040-8059","row_key":"23","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-23T06:07:37.357Z","run_id":"1771826828040-8059","row_key":"23","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-23T06:07:45.187Z","run_id":"1771826828040-8059","row_key":"23","site_name":"Accountx","action":"adaptive_stage","status":"running","error_message":"start driver=openclaw"}
+{"timestamp":"2026-02-23T06:07:57.948Z","run_id":"1771826828040-8059","row_key":"23","site_name":"Accountx","action":"adaptive_stage","status":"failed","error_message":"form_not_found reason=no_form_detected"}
+{"timestamp":"2026-02-23T06:08:01.073Z","run_id":"1771826828040-8059","row_key":"23","site_name":"Accountx","action":"needs_manual_mapping","status":"needs_manual_mapping","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771826828040-8059\\accountx-23\\comment_needs_manual_mapping.png","error_message":"no_form_detected"}
+{"timestamp":"2026-02-23T06:08:01.130Z","run_id":"1771826828040-8059","row_key":"23","site_name":"Accountx","action":"target_processed","status":"needs_manual_mapping","error_message":"https://accountx.in/ :: no_form_detected"}
+{"timestamp":"2026-02-23T06:08:01.653Z","run_id":"1771826828040-8059","action":"run_end","status":"completed"}

@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T05:30:41.798Z","run_id":"manualtest-1771565438220","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T05:30:41.805Z","run_id":"manualtest-1771565438220","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T05:30:42.190Z","run_id":"manualtest-1771565438220","row_key":"5","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-20T05:30:42.195Z","run_id":"manualtest-1771565438220","row_key":"5","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T05:30:56.820Z","run_id":"manualtest-1771565438220","row_key":"5","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-20T05:31:10.002Z","run_id":"manualtest-1771565438220","row_key":"5","site_name":"Accountx","action":"auth_required","status":"pending_verification","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\manualtest-1771565438220\\accountx-5\\pre_submit_1_auth_required.png","error_message":"Login/signup required before comment submit: a:has-text('Log in')"}
+{"timestamp":"2026-02-20T05:31:10.041Z","run_id":"manualtest-1771565438220","row_key":"5","site_name":"Accountx","action":"target_processed","status":"pending_verification","error_message":"https://accountx.in/ :: Login/signup required before comment submission."}
+{"timestamp":"2026-02-20T05:31:10.311Z","run_id":"manualtest-1771565438220","action":"run_end","status":"completed"}

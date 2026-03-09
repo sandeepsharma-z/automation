@@ -1,0 +1,13 @@
+{"timestamp":"2026-02-23T07:17:52.559Z","run_id":"1771831068737-5162","action":"run_start","status":"running"}
+{"timestamp":"2026-02-23T07:17:52.568Z","run_id":"1771831068737-5162","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-23T07:17:52.866Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-23T07:17:52.871Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-23T07:18:14.145Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-23T07:18:25.271Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"adaptive_stage","status":"running","error_message":"start driver=openclaw"}
+{"timestamp":"2026-02-23T07:18:25.722Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"adaptive_stage","status":"failed","error_message":"form_not_found reason=access_required"}
+{"timestamp":"2026-02-23T07:18:25.727Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"debug_state","status":"success","debug_state":"button_found","selector_found":"","action_taken":"detect_access_gateway","result":"success","error_message":"access continuation button detected while form missing"}
+{"timestamp":"2026-02-23T07:19:02.781Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"debug_state","status":"fail","debug_state":"button_found","selector_found":"","action_taken":"detect_sign_in_button","result":"fail","error_message":"google access button not located"}
+{"timestamp":"2026-02-23T07:19:02.783Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"debug_state","status":"fail","debug_state":"clicked","selector_found":"","action_taken":"click_access_button","result":"fail","error_message":"access continuation button not clickable"}
+{"timestamp":"2026-02-23T07:19:05.830Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"access_required","status":"access_required","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771831068737-5162\\accountx-23\\comment_access_required.png","error_message":"access_required"}
+{"timestamp":"2026-02-23T07:19:05.886Z","run_id":"1771831068737-5162","row_key":"23","site_name":"Accountx","action":"target_processed","status":"access_required","error_message":"https://accountx.in/ :: access_required"}
+{"timestamp":"2026-02-23T07:19:06.375Z","run_id":"1771831068737-5162","action":"run_end","status":"completed"}

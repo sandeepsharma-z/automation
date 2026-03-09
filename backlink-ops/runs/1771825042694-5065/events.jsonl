@@ -1,0 +1,11 @@
+{"timestamp":"2026-02-23T05:37:26.315Z","run_id":"1771825042694-5065","action":"run_start","status":"running"}
+{"timestamp":"2026-02-23T05:37:26.323Z","run_id":"1771825042694-5065","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-23T05:37:26.594Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-23T05:37:26.599Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-23T05:37:49.764Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-23T05:37:58.009Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"adaptive_stage","status":"running","error_message":"start driver=openclaw"}
+{"timestamp":"2026-02-23T05:38:10.619Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"adaptive_stage","status":"failed","error_message":"form_not_found reason=auth_required"}
+{"timestamp":"2026-02-23T05:38:10.621Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"adaptive_stage","status":"pending_verification","error_message":"waiting_for_manual_verification up_to_ms=900000"}
+{"timestamp":"2026-02-23T05:45:26.625Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"error","status":"failed","error_message":"https://accountx.in/ :: Target processing timeout after 480000ms"}
+{"timestamp":"2026-02-23T05:45:27.194Z","run_id":"1771825042694-5065","action":"run_end","status":"completed"}
+{"timestamp":"2026-02-23T05:53:11.916Z","run_id":"1771825042694-5065","row_key":"23","site_name":"Accountx","action":"needs_manual_mapping","status":"needs_manual_mapping","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771825042694-5065\\accountx-23\\comment_needs_manual_mapping.png","error_message":"no_form_detected"}

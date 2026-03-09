@@ -1,0 +1,9 @@
+{"timestamp":"2026-02-20T07:45:55.032Z","run_id":"1771573552047-6684","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T07:45:55.038Z","run_id":"1771573552047-6684","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T07:45:55.420Z","run_id":"1771573552047-6684","row_key":"7","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-20T07:45:55.429Z","run_id":"1771573552047-6684","row_key":"7","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T07:46:13.544Z","run_id":"1771573552047-6684","row_key":"7","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://onlybraces.enginyre.in/"}
+{"timestamp":"2026-02-20T07:47:41.991Z","run_id":"1771573552047-6684","row_key":"7","site_name":"Accountx","action":"approval_checkpoint","status":"approved","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771573552047-6684\\accountx-7\\pre_submit_1.png","error_message":"https://onlybraces.enginyre.in/"}
+{"timestamp":"2026-02-20T07:47:49.906Z","run_id":"1771573552047-6684","row_key":"7","site_name":"Accountx","action":"post_submit_state","status":"submitted","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771573552047-6684\\accountx-7\\pre_submit_1_post_submit.png","error_message":"Post-submit URL changed, likely submission completed."}
+{"timestamp":"2026-02-20T07:47:49.945Z","run_id":"1771573552047-6684","row_key":"7","site_name":"Accountx","action":"target_processed","status":"success","error_message":"https://onlybraces.enginyre.in/ :: ok"}
+{"timestamp":"2026-02-20T07:47:50.466Z","run_id":"1771573552047-6684","action":"run_end","status":"completed"}

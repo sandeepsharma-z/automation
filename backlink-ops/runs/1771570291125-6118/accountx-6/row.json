@@ -1,0 +1,78 @@
+{
+  "row_key": "6",
+  "site_slug": "accountx-6",
+  "run_id": "1771570291125-6118",
+  "workflow_type": "blog_commenting",
+  "input": {
+    "row_key": "6",
+    "backlink_type": "blog_commenting",
+    "site_name": "Accountx",
+    "default_website_url": "https://accountx.in/",
+    "directory_url": "https://alaafiaafrc.org/adtc/how-to-make-your-blog-and-social-media-accounts-work-together/",
+    "site_url": "https://alaafiaafrc.org/adtc/how-to-make-your-blog-and-social-media-accounts-work-together/",
+    "username": "accountx01",
+    "email": "elontak056@gmail.com",
+    "password": "accountx.in@123",
+    "company_name": "Accountx",
+    "company_address": "B-1209, Bhutani Alphathum,, Sector 90, Noida, Uttar Pradesh 201304",
+    "company_phone": "+91 75039 85039",
+    "company_description": "AccounTX welcomes you as your trusted ally for the Outsourced Finance Function. For over a decade, we've reshaped the landscape of Finance Outsourcing, aiming to turn it from a mere business necessity into a strategic advantage. We believe implementing processes and internal financial controls empowers businesses to achieve unparalleled success and make a lasting global impact. Our dedicated team is passionate about efficiency and committed to delivering top-notch financial solutions tailored to your unique needs.\n\nWe assist businesses with comprehensive accounting services in India and globally, ensuring accurate books, compliant reporting, and smooth financial operations. Our bookkeeping services are designed for startups, SMEs, and growing companies that need dependable  financial management. For entrepreneurs preparing to launch a new venture, we provide complete company registration support, including private limited company registration and other business structures. Whether you require company registration in India or an end-to-end business setup in India, our team ensures a seamless, fully compliant experience from start to finish.\n\nThrough our Global Desk, we assist clients in establishing and managing businesses worldwide from India, offering a cost advantage for their accounting, tax, and compliance requirements. Our dream team of Accountants, Financial Analysts, Tax Experts, and Compliance Specialists ensures they effectively address every aspect of their Finance Outsourcing needs. We don't just provide outsourcing solutions; we’re extensions of our clients' teams, collaborating to achieve their business goals.\n\nAccounTX stands as your reliable partner in an ever-evolving business landscape. Transparency forms the bedrock of our client relationships. Whether you’re a small setup or a large enterprise, we possess the expertise, dedication, and technology to elevate your financial processes to new heights.",
+    "target_links": [
+      "https://accountx.in/"
+    ],
+    "target_link": "https://accountx.in/",
+    "anchor_text": "",
+    "category": "Blog Commenting",
+    "notes": "Great insights on financial management and compliance. Many growing businesses struggle with structured accounting processes and internal controls.\n\nFor companies looking for reliable accounting services, bookkeeping, tax compliance, and company registration support in India, AccounTX provides end-to-end outsourced finance solutions.\n\nYou can explore more here: https://accountx.in/",
+    "tags": [],
+    "credentials": {
+      "username": "accountx01",
+      "email": "elontak056@gmail.com",
+      "password": "accountx.in@123"
+    },
+    "business_profile": {
+      "company_name": "Accountx",
+      "company_address": "B-1209, Bhutani Alphathum,, Sector 90, Noida, Uttar Pradesh 201304",
+      "company_phone": "+91 75039 85039",
+      "company_description": "AccounTX welcomes you as your trusted ally for the Outsourced Finance Function. For over a decade, we've reshaped the landscape of Finance Outsourcing, aiming to turn it from a mere business necessity into a strategic advantage. We believe implementing processes and internal financial controls empowers businesses to achieve unparalleled success and make a lasting global impact. Our dedicated team is passionate about efficiency and committed to delivering top-notch financial solutions tailored to your unique needs.\n\nWe assist businesses with comprehensive accounting services in India and globally, ensuring accurate books, compliant reporting, and smooth financial operations. Our bookkeeping services are designed for startups, SMEs, and growing companies that need dependable  financial management. For entrepreneurs preparing to launch a new venture, we provide complete company registration support, including private limited company registration and other business structures. Whether you require company registration in India or an end-to-end business setup in India, our team ensures a seamless, fully compliant experience from start to finish.\n\nThrough our Global Desk, we assist clients in establishing and managing businesses worldwide from India, offering a cost advantage for their accounting, tax, and compliance requirements. Our dream team of Accountants, Financial Analysts, Tax Experts, and Compliance Specialists ensures they effectively address every aspect of their Finance Outsourcing needs. We don't just provide outsourcing solutions; we’re extensions of our clients' teams, collaborating to achieve their business goals.\n\nAccounTX stands as your reliable partner in an ever-evolving business landscape. Transparency forms the bedrock of our client relationships. Whether you’re a small setup or a large enterprise, we possess the expertise, dedication, and technology to elevate your financial processes to new heights."
+    },
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "row_started",
+    "run_id": "1771570291123-6410",
+    "started_at": "2026-02-20T06:51:31.123Z",
+    "completed_at": "",
+    "screenshot_url": "",
+    "created_at": "2026-02-20T06:51:31.118Z",
+    "__rowKey": "6"
+  },
+  "output": {
+    "results": [
+      {
+        "target_link": "https://accountx.in/",
+        "created_link": "",
+        "result_title": "Comment Submission Failure",
+        "status": "failed",
+        "status_reason": "Submission appears failed (error/invalid/captcha indication found on page).",
+        "artifacts": [
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771570291125-6118\\accountx-6\\pre_submit_1.png",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771570291125-6118\\accountx-6\\pre_submit_1.html",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771570291125-6118\\accountx-6\\pre_submit_1_post_submit.png",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771570291125-6118\\accountx-6\\pre_submit_1_post_submit.html",
+          "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771570291125-6118\\accountx-6\\pre_submit_1_post_submit.json"
+        ],
+        "updated_at": "2026-02-20T06:53:50.370Z"
+      }
+    ],
+    "result_title": "Comment Submission Failure",
+    "created_link": "",
+    "status": "failed",
+    "status_reason": "failed:1 | Submission appears failed (error/invalid/captcha indication found on page).",
+    "run_id": "1771570291125-6118",
+    "started_at": "2026-02-20T06:51:31.123Z",
+    "completed_at": "2026-02-20T06:53:50.431Z",
+    "screenshot_url": "C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771570291125-6118\\accountx-6\\pre_submit_1.png"
+  }
+}

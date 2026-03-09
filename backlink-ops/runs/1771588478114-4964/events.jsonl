@@ -1,0 +1,9 @@
+{"timestamp":"2026-02-20T11:54:44.282Z","run_id":"1771588478114-4964","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:54:44.301Z","run_id":"1771588478114-4964","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:54:44.880Z","run_id":"1771588478114-4964","row_key":"12","site_name":"ryans-uk.com","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:54:44.916Z","run_id":"1771588478114-4964","row_key":"12","site_name":"ryans-uk.com","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:55:16.639Z","run_id":"1771588478114-4964","row_key":"12","site_name":"ryans-uk.com","action":"navigate","status":"retrying","error_message":"attempt 1: page.evaluate: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-20T11:55:24.493Z","run_id":"1771588478114-4964","row_key":"12","site_name":"ryans-uk.com","action":"navigate","status":"retrying","error_message":"attempt 2: page.goto: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-20T11:55:24.500Z","run_id":"1771588478114-4964","row_key":"12","site_name":"ryans-uk.com","action":"target_failed","status":"failed","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588478114-4964\\ryans-uk-com-12\\pre_submit_1_failed.png","error_message":"page.goto: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-20T11:55:24.516Z","run_id":"1771588478114-4964","row_key":"12","site_name":"ryans-uk.com","action":"target_processed","status":"failed","error_message":"https://www.ryans-uk.com/blog :: page.goto: Target page, context or browser has been closed"}
+{"timestamp":"2026-02-20T11:55:24.922Z","run_id":"1771588478114-4964","action":"run_end","status":"completed"}

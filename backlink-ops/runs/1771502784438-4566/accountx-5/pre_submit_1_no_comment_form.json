@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-19T12:07:05.356Z",
+  "step": "no_comment_form_detected",
+  "status": "skipped",
+  "row_key": "5",
+  "site_name": "Accountx",
+  "target_link": "https://accountx.in/",
+  "final_url": "https://myanomaly.wordpress.com/comments/feed/",
+  "page_title": "",
+  "message": "Skipped: no comment form detected (not a blog commenting target)"
+}

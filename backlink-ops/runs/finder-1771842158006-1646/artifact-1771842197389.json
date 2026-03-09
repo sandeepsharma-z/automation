@@ -1,0 +1,7 @@
+{
+  "run_id": "1771842158006-1646",
+  "captured_at": "2026-02-23T10:23:17.391Z",
+  "url": "https://duckduckgo.com/?q=%22uk+accounting+support%22+%22leave+a+reply%22+%22blog%22+-crossword+-solver+-wordplays&kl=uk-en&ia=web",
+  "type": "run_failed",
+  "error": "page.goto: Target page, context or browser has been closed"
+}

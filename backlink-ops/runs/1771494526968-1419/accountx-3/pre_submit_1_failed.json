@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-19T09:50:04.017Z",
+  "step": "target_failed",
+  "status": "failed",
+  "row_key": "3",
+  "site_name": "Accountx",
+  "target_link": "https://accountx.in/",
+  "final_url": "https://glowingdirectory.com/listings13481734/premium-bopp-bags-manufacturer-in-india-for-durable-printed-packaging",
+  "page_title": "",
+  "message": "locator.click: Target page, context or browser has been closed"
+}

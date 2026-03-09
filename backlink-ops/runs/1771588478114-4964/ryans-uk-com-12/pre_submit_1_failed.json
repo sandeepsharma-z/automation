@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T11:55:24.497Z",
+  "step": "target_failed",
+  "status": "failed",
+  "row_key": "12",
+  "site_name": "ryans-uk.com",
+  "target_link": "https://www.ryans-uk.com/blog",
+  "final_url": "https://www.ryans-uk.com/blog",
+  "page_title": "",
+  "message": "page.goto: Target page, context or browser has been closed"
+}

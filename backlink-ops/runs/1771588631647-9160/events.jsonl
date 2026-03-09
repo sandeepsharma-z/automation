@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T11:57:15.401Z","run_id":"1771588631647-9160","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:57:15.412Z","run_id":"1771588631647-9160","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:57:16.021Z","run_id":"1771588631647-9160","row_key":"15","site_name":"businessaccountingbasics.co.uk","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:57:16.031Z","run_id":"1771588631647-9160","row_key":"15","site_name":"businessaccountingbasics.co.uk","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:57:40.782Z","run_id":"1771588631647-9160","row_key":"15","site_name":"businessaccountingbasics.co.uk","action":"navigate","status":"ok","error_message":"https://www.businessaccountingbasics.co.uk/bookkeeping-blog"}
+{"timestamp":"2026-02-20T11:58:05.927Z","run_id":"1771588631647-9160","row_key":"15","site_name":"businessaccountingbasics.co.uk","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588631647-9160\\businessaccountingbasics-co-uk-15\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:58:05.988Z","run_id":"1771588631647-9160","row_key":"15","site_name":"businessaccountingbasics.co.uk","action":"target_processed","status":"skipped","error_message":"https://www.businessaccountingbasics.co.uk/bookkeeping-blog :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:58:06.328Z","run_id":"1771588631647-9160","action":"run_end","status":"completed"}

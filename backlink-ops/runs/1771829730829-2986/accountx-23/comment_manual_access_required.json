@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-23T06:56:23.625Z",
+  "step": "manual_access_required",
+  "status": "manual_access_required",
+  "row_key": "23",
+  "site_name": "Accountx",
+  "target_link": "https://accountx.in/",
+  "final_url": "https://accounts.google.com/v3/signin/challenge/pwd?TL=AHU8sQtglf_tpgbttioNHH_bugOBsgruno7LBzeX9np-fr4Cmc0Pn79w0PUMzlpN&checkConnection=youtube%3A252&checkedDomains=youtube&cid=1&continue=https%3A%2F%2Fwww.blogger.com%2Fcomment%2Fredirect%3FblogId%3D2438603449567750630%26po%3D2969928891214402611%26hsa%3D1&dsh=S772786211%3A1771829772647612&flowEntry=ServiceLogin&flowName=GlifWebSignIn&hl=en-GB&ifkv=ASfE1-r3_gJpZesc_eg5Tk8TvmbhH2xDWGAqpDl-BEEh0i6YDHRZ8YlSuT7fhQGrRsjHX5xbmZV-6A&pstMsg=1&service=blogger",
+  "page_title": "Welcome",
+  "message": "manual_access_required:manual_login_required"
+}

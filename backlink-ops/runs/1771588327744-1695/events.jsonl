@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-20T11:52:12.151Z","run_id":"1771588327744-1695","action":"run_start","status":"running"}
+{"timestamp":"2026-02-20T11:52:12.162Z","run_id":"1771588327744-1695","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-20T11:52:12.557Z","run_id":"1771588327744-1695","row_key":"10","site_name":"onpointaccounting.co.uk","action":"start","status":"running"}
+{"timestamp":"2026-02-20T11:52:12.568Z","run_id":"1771588327744-1695","row_key":"10","site_name":"onpointaccounting.co.uk","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-20T11:52:48.398Z","run_id":"1771588327744-1695","row_key":"10","site_name":"onpointaccounting.co.uk","action":"navigate","status":"ok","error_message":"https://onpointaccounting.co.uk/blogs"}
+{"timestamp":"2026-02-20T11:53:29.384Z","run_id":"1771588327744-1695","row_key":"10","site_name":"onpointaccounting.co.uk","action":"no_comment_form_detected","status":"skipped","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771588327744-1695\\onpointaccounting-co-uk-10\\pre_submit_1_no_comment_form.png","error_message":"Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:53:29.455Z","run_id":"1771588327744-1695","row_key":"10","site_name":"onpointaccounting.co.uk","action":"target_processed","status":"skipped","error_message":"https://onpointaccounting.co.uk/blogs :: Skipped: no comment form detected (not a blog commenting target)"}
+{"timestamp":"2026-02-20T11:53:29.849Z","run_id":"1771588327744-1695","action":"run_end","status":"completed"}

@@ -1,0 +1,5 @@
+{"timestamp":"2026-02-19T09:38:19.742Z","run_id":"1771493893881-2188","action":"run_start","status":"running"}
+{"timestamp":"2026-02-19T09:38:19.752Z","run_id":"1771493893881-2188","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-19T09:38:20.227Z","run_id":"1771493893881-2188","row_key":"3","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-19T09:38:20.239Z","run_id":"1771493893881-2188","row_key":"3","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-19T09:38:23.412Z","run_id":"1771493893881-2188","row_key":"3","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}

@@ -1,0 +1,23 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+sqlalchemy==2.0.36
+alembic==1.14.0
+pymysql==1.1.1
+mysql-connector-python==9.1.0
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.19
+cryptography==44.0.0
+httpx==0.28.1
+beautifulsoup4==4.12.3
+selectolax==0.3.27
+celery==5.4.0
+redis==5.2.1
+orjson==3.10.12; python_version < "3.14"
+pytest==8.3.4
+langchain==0.3.14
+langchain-openai==0.2.14
+langchain-community==0.3.14
+chromadb==0.5.23
+tiktoken==0.8.0

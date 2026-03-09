@@ -1,0 +1,75 @@
+{
+  "row_key": "19",
+  "site_slug": "123financials-com-19",
+  "run_id": "1771588859286-9943",
+  "workflow_type": "blog_commenting",
+  "input": {
+    "row_key": "19",
+    "backlink_type": "blog_commenting",
+    "site_name": "123financials.com",
+    "default_website_url": "",
+    "directory_url": "https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers",
+    "site_url": "https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers",
+    "username": "",
+    "email": "",
+    "password": "",
+    "company_name": "",
+    "company_address": "",
+    "company_phone": "",
+    "company_description": "",
+    "target_links": [
+      "https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers"
+    ],
+    "target_link": "https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers",
+    "anchor_text": "",
+    "category": "",
+    "notes": "finder_meta:{\"source\":\"finder\",\"keyword\":\"uk book keeping\",\"query\":\"uk book keeping blog comment\",\"engine\":\"duckduckgo\",\"collected_at\":\"2026-02-20T11:29:36.995Z\",\"normalized_url\":\"https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers\"}",
+    "tags": [
+      "finder",
+      "duckduckgo"
+    ],
+    "credentials": {
+      "username": "",
+      "email": "",
+      "password": ""
+    },
+    "business_profile": {
+      "company_name": "",
+      "company_address": "",
+      "company_phone": "",
+      "company_description": ""
+    },
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "row_started",
+    "run_id": "1771588859283-8558",
+    "started_at": "2026-02-20T12:00:59.283Z",
+    "completed_at": "",
+    "screenshot_url": "",
+    "created_at": "2026-02-20T11:49:34.732Z",
+    "__rowKey": "19"
+  },
+  "output": {
+    "results": [
+      {
+        "target_link": "https://www.123financials.com/insights/20-must-read-websites-and-blogs-for-accountants-and-bookkeepers",
+        "created_link": "",
+        "result_title": "",
+        "status": "running",
+        "status_reason": "Ready to submit.",
+        "artifacts": [],
+        "updated_at": "2026-02-20T12:01:06.115Z"
+      }
+    ],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "running:1 | Ready to submit...",
+    "run_id": "1771588859286-9943",
+    "started_at": "2026-02-20T12:00:59.283Z",
+    "completed_at": "",
+    "screenshot_url": ""
+  }
+}

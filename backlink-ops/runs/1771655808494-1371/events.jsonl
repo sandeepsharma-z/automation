@@ -1,0 +1,8 @@
+{"timestamp":"2026-02-21T06:36:52.718Z","run_id":"1771655808494-1371","action":"run_start","status":"running"}
+{"timestamp":"2026-02-21T06:36:52.728Z","run_id":"1771655808494-1371","action":"queue_loaded","status":"ok","error_message":"items=1"}
+{"timestamp":"2026-02-21T06:36:53.070Z","run_id":"1771655808494-1371","row_key":"22","site_name":"Accountx","action":"start","status":"running"}
+{"timestamp":"2026-02-21T06:36:53.077Z","run_id":"1771655808494-1371","row_key":"22","site_name":"Accountx","action":"ai_profile_fill","status":"ai_fallback","error_message":"missing_api_key"}
+{"timestamp":"2026-02-21T06:37:27.847Z","run_id":"1771655808494-1371","row_key":"22","site_name":"Accountx","action":"navigate","status":"ok","error_message":"https://accountx.in/"}
+{"timestamp":"2026-02-21T06:37:42.438Z","run_id":"1771655808494-1371","row_key":"22","site_name":"Accountx","action":"needs_manual_mapping","status":"needs_manual_mapping","screenshot_path":"C:\\wamp64\\www\\automation\\backlink-ops\\runs\\1771655808494-1371\\accountx-22\\comment_needs_manual_mapping.png","error_message":"captcha_gate"}
+{"timestamp":"2026-02-21T06:37:42.488Z","run_id":"1771655808494-1371","row_key":"22","site_name":"Accountx","action":"target_processed","status":"needs_manual_mapping","error_message":"https://accountx.in/ :: captcha_gate"}
+{"timestamp":"2026-02-21T06:37:43.159Z","run_id":"1771655808494-1371","action":"run_end","status":"completed"}

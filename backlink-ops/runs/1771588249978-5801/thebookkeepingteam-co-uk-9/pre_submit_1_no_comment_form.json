@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-02-20T11:52:06.983Z",
+  "step": "no_comment_form_detected",
+  "status": "skipped",
+  "row_key": "9",
+  "site_name": "thebookkeepingteam.co.uk",
+  "target_link": "https://www.thebookkeepingteam.co.uk/blog",
+  "final_url": "https://www.thebookkeepingteam.co.uk/blog/",
+  "page_title": "Bookkeeping & Accounting Blog For Business Owners",
+  "message": "Skipped: no comment form detected (not a blog commenting target)"
+}

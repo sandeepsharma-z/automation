@@ -1,0 +1,369 @@
+[
+  {
+    "name": "Example Directory",
+    "base_url": "https://example.com",
+    "allowed": false,
+    "notes": "Set allowed=true only after legal and platform policy approval.",
+    "required_fields": [
+      "username",
+      "email",
+      "password",
+      "company_name",
+      "company_description",
+      "target_link"
+    ],
+    "selectors": {
+      "username": "input[name='username']",
+      "email": "input[type='email']",
+      "password": "input[type='password']",
+      "website_name": "input[name='website_name']",
+      "address": "textarea[name='address']",
+      "description": "textarea[name='description']",
+      "target_link": "input[name='website_url']",
+      "submit_button": "button[type='submit']"
+    }
+  },
+  {
+    "name": "Blogs.city.ac.uk",
+    "domain": "blogs.city.ac.uk",
+    "base_url": "https://blogs.city.ac.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Added from Backlink Ops UI allowlist action.",
+    "rate_limit_ms": 180000,
+    "retries": 2,
+    "human_approval_required": true,
+    "required_fields": [],
+    "selectors": {
+      "comment_box": {
+        "css": "button#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+        "xpath": "/html[1]/body[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[2]/button[1]"
+      },
+      "name": {
+        "css": "textarea#comment",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[2]/div[2]/form[1]/p[2]/textarea[1]"
+      },
+      "email": {
+        "css": "button#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection",
+        "xpath": "/html[1]/body[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[2]/button[3]"
+      },
+      "website": {
+        "css": "button#CybotCookiebotDialogBodyButtonDecline",
+        "xpath": "/html[1]/body[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[2]/button[4]"
+      },
+      "submit": {
+        "css": "button#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+        "xpath": "/html[1]/body[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[2]/button[1]"
+      },
+      "description": {
+        "css": "button#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+        "xpath": "/html[1]/body[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[2]/button[1]"
+      },
+      "website_name": {
+        "css": "textarea#comment",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[2]/div[2]/form[1]/p[2]/textarea[1]"
+      },
+      "target_link": {
+        "css": "button#CybotCookiebotDialogBodyButtonDecline",
+        "xpath": "/html[1]/body[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[2]/button[4]"
+      },
+      "submit_button": {
+        "css": "button#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+        "xpath": "/html[1]/body[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[2]/button[1]"
+      }
+    }
+  },
+  {
+    "name": "Anotepad.com",
+    "domain": "anotepad.com",
+    "base_url": "https://anotepad.com",
+    "allowed": true,
+    "type": "blog commenting",
+    "notes": "Added from Backlink Ops UI allowlist action.",
+    "rate_limit_ms": 180000,
+    "retries": 2,
+    "human_approval_required": true,
+    "required_fields": [],
+    "selectors": {
+      "comment_box": {
+        "css": "div#comments_container > div.comment-new:nth-of-type(3) > div.row:nth-of-type(1)",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]"
+      },
+      "name": {
+        "css": "input#comment_name",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/input[1]"
+      },
+      "email": {
+        "css": "div#comments_container > div.comment-new:nth-of-type(3) > div.row:nth-of-type(1)",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]"
+      },
+      "website": {
+        "css": "div#comments_container > div.comment-new:nth-of-type(3) > div.row:nth-of-type(1)",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]"
+      },
+      "submit": {
+        "css": "div#comments_container > div.comment-new:nth-of-type(3) > div.row:nth-of-type(1)",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]"
+      },
+      "description": {
+        "css": "div#comments_container > div.comment-new:nth-of-type(3) > div.row:nth-of-type(1)",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]"
+      },
+      "website_name": {
+        "css": "input#comment_name",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/input[1]"
+      },
+      "target_link": {
+        "css": "div#comments_container > div.comment-new:nth-of-type(3) > div.row:nth-of-type(1)",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]"
+      },
+      "submit_button": {
+        "css": "div#comments_container > div.comment-new:nth-of-type(3) > div.row:nth-of-type(1)",
+        "xpath": "/html[1]/body[1]/div[2]/div[1]/div[1]/div[3]/div[3]/div[1]"
+      }
+    },
+    "updated_at": "2026-02-19T12:02:02.703Z"
+  },
+  {
+    "name": "Glowingdirectory.com",
+    "domain": "glowingdirectory.com",
+    "base_url": "https://glowingdirectory.com",
+    "allowed": true,
+    "type": "blog commenting",
+    "notes": "Added from Backlink Ops UI allowlist action.",
+    "rate_limit_ms": 180000,
+    "retries": 2,
+    "human_approval_required": true,
+    "required_fields": [],
+    "selectors": {}
+  },
+  {
+    "name": "Faithfulbloggers.com",
+    "domain": "faithfulbloggers.com",
+    "base_url": "https://faithfulbloggers.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Added from Backlink Ops UI allowlist action.",
+    "rate_limit_ms": 180000,
+    "retries": 2,
+    "human_approval_required": true,
+    "required_fields": [],
+    "selectors": {}
+  },
+  {
+    "name": "myanomaly.wordpress.com",
+    "base_url": "https://myanomaly.wordpress.com",
+    "domain": "myanomaly.wordpress.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-19T12:01:22.198Z",
+    "updated_at": "2026-02-21T05:25:00.739Z"
+  },
+  {
+    "name": "alaafiaafrc.org",
+    "base_url": "https://alaafiaafrc.org",
+    "domain": "alaafiaafrc.org",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T06:51:31.116Z",
+    "updated_at": "2026-02-21T09:46:22.437Z"
+  },
+  {
+    "name": "andimorsedesign.com",
+    "base_url": "https://andimorsedesign.com",
+    "domain": "andimorsedesign.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T07:36:19.736Z",
+    "updated_at": "2026-02-20T07:45:52.040Z"
+  },
+  {
+    "name": "bloggers.feedspot.com",
+    "base_url": "https://bloggers.feedspot.com",
+    "domain": "bloggers.feedspot.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.646Z",
+    "updated_at": "2026-02-20T11:49:34.646Z"
+  },
+  {
+    "name": "thebookkeepingteam.co.uk",
+    "base_url": "https://thebookkeepingteam.co.uk",
+    "domain": "thebookkeepingteam.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.655Z",
+    "updated_at": "2026-02-20T11:49:34.655Z"
+  },
+  {
+    "name": "onpointaccounting.co.uk",
+    "base_url": "https://onpointaccounting.co.uk",
+    "domain": "onpointaccounting.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.663Z",
+    "updated_at": "2026-02-20T11:49:34.663Z"
+  },
+  {
+    "name": "accountingweb.co.uk",
+    "base_url": "https://accountingweb.co.uk",
+    "domain": "accountingweb.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.671Z",
+    "updated_at": "2026-02-20T11:49:34.671Z"
+  },
+  {
+    "name": "ryans-uk.com",
+    "base_url": "https://ryans-uk.com",
+    "domain": "ryans-uk.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.678Z",
+    "updated_at": "2026-02-20T11:49:34.678Z"
+  },
+  {
+    "name": "thebusinessbookkeeper.co.uk",
+    "base_url": "https://thebusinessbookkeeper.co.uk",
+    "domain": "thebusinessbookkeeper.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.686Z",
+    "updated_at": "2026-02-20T11:49:34.686Z"
+  },
+  {
+    "name": "sandstonebookkeeping.co.uk",
+    "base_url": "https://sandstonebookkeeping.co.uk",
+    "domain": "sandstonebookkeeping.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.692Z",
+    "updated_at": "2026-02-20T11:49:34.692Z"
+  },
+  {
+    "name": "businessaccountingbasics.co.uk",
+    "base_url": "https://businessaccountingbasics.co.uk",
+    "domain": "businessaccountingbasics.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.699Z",
+    "updated_at": "2026-02-20T11:49:34.699Z"
+  },
+  {
+    "name": "conceptaccountancy.co.uk",
+    "base_url": "https://conceptaccountancy.co.uk",
+    "domain": "conceptaccountancy.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.708Z",
+    "updated_at": "2026-02-20T11:49:34.708Z"
+  },
+  {
+    "name": "genzed.co.uk",
+    "base_url": "https://genzed.co.uk",
+    "domain": "genzed.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.715Z",
+    "updated_at": "2026-02-20T11:49:34.715Z"
+  },
+  {
+    "name": "kingsbridge.co.uk",
+    "base_url": "https://kingsbridge.co.uk",
+    "domain": "kingsbridge.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.723Z",
+    "updated_at": "2026-02-20T11:49:34.723Z"
+  },
+  {
+    "name": "123financials.com",
+    "base_url": "https://123financials.com",
+    "domain": "123financials.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.730Z",
+    "updated_at": "2026-02-23T06:53:24.166Z"
+  },
+  {
+    "name": "aveonservices.com",
+    "base_url": "https://aveonservices.com",
+    "domain": "aveonservices.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.737Z",
+    "updated_at": "2026-02-20T11:49:34.737Z"
+  },
+  {
+    "name": "blog.youtube",
+    "base_url": "https://blog.youtube",
+    "domain": "blog.youtube",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-20T11:49:34.744Z",
+    "updated_at": "2026-02-20T11:49:34.744Z"
+  },
+  {
+    "name": "mintmusic.co.uk",
+    "base_url": "https://mintmusic.co.uk",
+    "domain": "mintmusic.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-02-21T10:00:20.377Z",
+    "updated_at": "2026-02-23T07:31:58.637Z"
+  }
+]

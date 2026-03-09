@@ -1,0 +1,19 @@
+{
+  "name": "contentops-admin",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "clean:cache": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true});require('fs').rmSync('node_modules/.cache',{recursive:true,force:true})}catch(e){}\"",
+    "dev": "next dev -p 3000",
+    "dev:reset": "npm run clean:cache && next dev -p 3000",
+    "dev:stable": "npm run clean:cache && next build && next start -p 3000",
+    "start:3000": "next start -p 3000",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.33",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}

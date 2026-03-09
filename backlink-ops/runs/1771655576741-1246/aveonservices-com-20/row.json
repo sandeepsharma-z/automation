@@ -1,0 +1,65 @@
+{
+  "row_key": "20",
+  "site_slug": "aveonservices-com-20",
+  "run_id": "1771655576741-1246",
+  "workflow_type": "blog_commenting",
+  "input": {
+    "row_key": "20",
+    "backlink_type": "blog_commenting",
+    "site_name": "aveonservices.com",
+    "default_website_url": "",
+    "directory_url": "https://aveonservices.com/35-best-uk-accounting-blogs-and-websites-in-2025",
+    "site_url": "https://aveonservices.com/35-best-uk-accounting-blogs-and-websites-in-2025",
+    "username": "",
+    "email": "",
+    "password": "",
+    "company_name": "",
+    "company_address": "",
+    "company_phone": "",
+    "company_description": "",
+    "target_links": [
+      "https://aveonservices.com/35-best-uk-accounting-blogs-and-websites-in-2025"
+    ],
+    "target_link": "https://aveonservices.com/35-best-uk-accounting-blogs-and-websites-in-2025",
+    "anchor_text": "",
+    "category": "",
+    "notes": "finder_meta:{\"source\":\"finder\",\"keyword\":\"uk book keeping\",\"query\":\"uk book keeping blog comment\",\"engine\":\"duckduckgo\",\"collected_at\":\"2026-02-20T11:29:36.995Z\",\"normalized_url\":\"https://aveonservices.com/35-best-uk-accounting-blogs-and-websites-in-2025\"}",
+    "tags": [
+      "finder",
+      "duckduckgo"
+    ],
+    "credentials": {
+      "username": "",
+      "email": "",
+      "password": ""
+    },
+    "business_profile": {
+      "company_name": "",
+      "company_address": "",
+      "company_phone": "",
+      "company_description": ""
+    },
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "row_started",
+    "run_id": "1771655576739-5808",
+    "started_at": "2026-02-21T06:32:56.739Z",
+    "completed_at": "",
+    "screenshot_url": "",
+    "created_at": "2026-02-20T11:49:34.739Z",
+    "__rowKey": "20"
+  },
+  "output": {
+    "results": [],
+    "result_title": "",
+    "created_link": "",
+    "status": "running",
+    "status_reason": "",
+    "run_id": "1771655576741-1246",
+    "started_at": "2026-02-21T06:32:56.739Z",
+    "completed_at": "",
+    "screenshot_url": ""
+  }
+}
