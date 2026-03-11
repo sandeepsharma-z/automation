@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { URL } from "node:url";
 import { chromium } from "playwright";
+import { fetchOpenCrawlSearch, fetchOpenCrawlPage } from "./src/opencrawl_client.js";
 
 function parseArgs(argv = []) {
   const out = {};
@@ -457,13 +458,13 @@ function buildFallbackQueries(baseQuery, keyword, templateIntent) {
 
   // Keep the same keyword intent, but suppress common noisy SERP buckets.
   push(`${base} -crossword -solver -meaning -definition -grammar -generator -checker -wordplays`);
-  push(`inurl:blog "${kw}" "leave a reply" -"powered by wordpress" -crossword -solver -wordplays`);
-  push(`inurl:blog "${kw}" "post comment" -crossword -solver -wordplays`);
-  push(`"${kw}" "leave a comment" -crossword -solver -wordplays`);
-  push(`"${kw}" "post comment" -crossword -solver -wordplays`);
-  push(`"${kw}" "leave a reply" "blog" -crossword -solver -wordplays`);
-  push(`inurl:blog "${kw}" -crossword -solver -wordplays`);
-  push(`"${kw}" "comments" "blog" -crossword -solver -wordplays`);
+  push(`inurl:blog ${kw} "leave a reply" -"powered by wordpress" -crossword -solver -wordplays`);
+  push(`inurl:blog ${kw} "post comment" -crossword -solver -wordplays`);
+  push(`${kw} "leave a comment" -crossword -solver -wordplays`);
+  push(`${kw} "post comment" -crossword -solver -wordplays`);
+  push(`${kw} "leave a reply" blog -crossword -solver -wordplays`);
+  push(`inurl:blog ${kw} -crossword -solver -wordplays`);
+  push(`${kw} "comments" blog -crossword -solver -wordplays`);
   return out;
 }
 
@@ -730,6 +731,226 @@ async function captureArtifacts(page, runId, meta = {}) {
   return [screenshotPath, htmlPath, metaPath];
 }
 
+// ─── OpenCrawl-powered helpers ────────────────────────────────────────────────
+
+function detectOpportunityType(url = "", title = "", html = "") {
+  const lUrl = String(url || "").toLowerCase();
+  const lTitle = String(title || "").toLowerCase();
+  const lHtml = String(html || "").slice(0, 8000).toLowerCase();
+  const hay = `${lUrl} ${lTitle}`;
+
+  if (/(write.for.us|guest.post|submit.a.post|contribute.to|become.a.contributor)/i.test(hay)) return "write_for_us";
+  if (/(\/forum\/|\/forums\/|\/thread\/|\/board\/|\/topic\/|phpbb|vbulletin|xenforo|discourse)/i.test(lUrl)) return "forum";
+  if (/(\/resources\/|\/resource-page|\/useful-links|\/recommended|\/partners\/|\/links\/)/i.test(lUrl)) return "resource_page";
+  if (/(\/directory\/|\/listing\/|\/business-directory|\/bizdir|\/yellowpages|\/citations?\/)/i.test(lUrl)) return "directory";
+
+  // HTML-level signals (if page was fetched)
+  if (lHtml) {
+    if (/(write for us|guest post|submit.{0,20}article|contributor guidelines)/i.test(lHtml)) return "write_for_us";
+    if (/(resource page|useful links|recommended (sites|resources|links))/i.test(lHtml)) return "resource_page";
+    if (/(name=["']comment["']|id=["']comment["']|id=["']respond["']|class=["'][^"']*comment-form)/i.test(lHtml)) return "blog_comment";
+  }
+
+  if (/(\/blog\/|\/post\/|\/article\/|\/news\/|\/p\/[0-9])/i.test(lUrl)) return "blog_comment";
+  return "general";
+}
+
+function estimateDomainAuthority(domain = "", html = "") {
+  let score = 20;
+  const d = String(domain || "").toLowerCase();
+
+  // TLD-based signals
+  if (d.endsWith(".edu")) score += 40;
+  else if (d.endsWith(".gov")) score += 35;
+  else if (d.endsWith(".org")) score += 15;
+  else if (d.endsWith(".com") || d.endsWith(".net")) score += 10;
+  else if (d.endsWith(".io") || d.endsWith(".co")) score += 6;
+
+  // Domain name quality
+  const bare = d.replace(/^www\./, "").split(".")[0];
+  if (bare.length >= 4 && bare.length <= 14) score += 5;
+  if (/^[a-z0-9]+$/.test(bare)) score += 4; // no hyphens = cleaner brand
+
+  // HTML signals
+  if (html) {
+    const lHtml = String(html).slice(0, 15000).toLowerCase();
+    if (html.length > 80000) score += 8;
+    else if (html.length > 30000) score += 4;
+    if (/(twitter\.com|facebook\.com|linkedin\.com|instagram\.com)/.test(lHtml)) score += 3;
+    if (/wp-content|\/wp-includes/.test(lHtml)) score += 4; // WordPress = established
+    if (/schema\.org|og:title|og:description/.test(lHtml)) score += 3; // structured data
+    if (/disqus|intensedebate|livefyre/.test(lHtml)) score += 2; // 3rd party comments
+  }
+
+  return Math.min(100, Math.max(0, score));
+}
+
+function extractCommentFormSignals(html = "") {
+  if (!html) {
+    return {
+      hasCommentForm: false, hasAuthorField: false, hasEmailField: false,
+      hasUrlField: false, hasSubmitButton: false, commentsClosed: false, isDoFollow: true,
+    };
+  }
+  const commentsClosed = /(comments are closed|commenting has been turned off|comment is closed|comments? disabled)/i.test(html);
+  const hasCommentForm = /(name=["']comment["']|id=["']comment["']|class=["'][^"']{0,60}comment-form|id=["']respond["'])/i.test(html);
+  const hasAuthorField = /name=["']author["']/i.test(html);
+  const hasEmailField = /name=["']email["']/i.test(html);
+  const hasUrlField = /name=["']url["']|name=["']website["']|name=["']homepage["']/i.test(html);
+  const hasSubmitButton = /(post comment|submit comment|leave a reply|add comment|type=["']submit["'][^>]{0,120}(comment|reply))/i.test(html);
+  // If there's NO nofollow on comment links, treat as dofollow opportunity
+  const noFollowComments = /rel=["'][^"']*nofollow[^"']*["'][^>]{0,80}(comment|reply)|comment[^>]{0,80}rel=["'][^"']*nofollow/i.test(html);
+  return { hasCommentForm, hasAuthorField, hasEmailField, hasUrlField, hasSubmitButton, commentsClosed, isDoFollow: !noFollowComments };
+}
+
+async function collectOpenCrawl(keyword, templates, limit, alreadySeen, apiUrl) {
+  const results = [];
+  if (!apiUrl) return results;
+
+  // Build diverse queries from templates + keyword variants
+  const queries = new Set();
+  for (const tpl of templates.slice(0, 5)) {
+    const q = tpl.includes("{keyword}") ? tpl.replaceAll("{keyword}", keyword) : `${tpl} ${keyword}`;
+    queries.add(String(q).trim());
+  }
+  // High-value direct queries
+  queries.add(keyword);
+  queries.add(`${keyword} blog`);
+  queries.add(`${keyword} "leave a reply"`);
+  queries.add(`${keyword} "write for us"`);
+  queries.add(`${keyword} "guest post"`);
+  queries.add(`${keyword} resource page`);
+  queries.add(`${keyword} inurl:blog`);
+
+  const seen = new Set([...alreadySeen]);
+
+  for (const query of queries) {
+    if (results.length >= limit * 2) break;
+    try {
+      const resp = await fetchOpenCrawlSearch({ query, limit: Math.min(60, limit * 2), apiUrl, timeoutMs: 18000 });
+      if (!resp?.ok || !Array.isArray(resp.items) || !resp.items.length) continue;
+
+      for (const item of resp.items) {
+        const normalized = normalizeUrl(item.url || "");
+        if (!normalized || seen.has(normalized)) continue;
+        const domain = normalizeDomain(normalized);
+        if (!domain || isBlockedDomain(domain)) continue;
+
+        const score = qualityScore({ url: normalized, domain, title: String(item.title || ""), keyword, query });
+        if (score < -80) continue; // filter extreme spam only, OpenCrawl data is usually cleaner
+
+        seen.add(normalized);
+        const opportunityType = detectOpportunityType(normalized, String(item.title || ""));
+        results.push({
+          url: normalized,
+          domain,
+          title: String(item.title || "").trim(),
+          snippet: String(item.snippet || "").trim(),
+          score,
+          query,
+          engine: "opencrawl",
+          intent: opportunityType,
+          opportunity_type: opportunityType,
+          discovered_at: item.discovered_at || null,
+          source: "opencrawl_search",
+        });
+      }
+    } catch (_) {
+      // OpenCrawl query failed, skip to next query
+    }
+  }
+
+  // Sort by score descending before returning
+  return results.sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
+}
+
+async function enrichCandidateViaOpenCrawl(candidate, signalCache, apiUrl) {
+  if (!apiUrl || !candidate?.url) return null;
+
+  const cacheKey = `oc_page:${candidate.url}`;
+  if (signalCache.has(cacheKey)) return signalCache.get(cacheKey);
+
+  try {
+    const resp = await fetchOpenCrawlPage({ url: candidate.url, apiUrl, timeoutMs: 15000 });
+    if (!resp?.ok || !resp.html) {
+      signalCache.set(cacheKey, null);
+      return null;
+    }
+
+    const signals = extractCommentFormSignals(resp.html);
+    const daEstimate = estimateDomainAuthority(String(candidate.domain || ""), resp.html);
+    const opportunityType = detectOpportunityType(candidate.url, String(candidate.title || ""), resp.html);
+
+    const enrichment = {
+      has_comment_form: signals.hasCommentForm && !signals.commentsClosed,
+      has_author_field: signals.hasAuthorField,
+      has_email_field: signals.hasEmailField,
+      has_url_field: signals.hasUrlField,
+      has_submit_button: signals.hasSubmitButton,
+      comments_closed: signals.commentsClosed,
+      is_dofollow: signals.isDoFollow,
+      da_estimate: daEstimate,
+      opportunity_type: opportunityType,
+      page_verified: true,
+      verified_via: "opencrawl",
+    };
+
+    signalCache.set(cacheKey, enrichment);
+    return enrichment;
+  } catch (_) {
+    signalCache.set(cacheKey, null);
+    return null;
+  }
+}
+
+// Unified signal check: tries OpenCrawl page fetch first (fast), falls back to Playwright.
+// Also mutates candidate in-place with enrichment data if OpenCrawl succeeds.
+async function checkPageSignals(context, verifyPage, candidate, signalCache, openCrawlApiUrl) {
+  // 1. Try OpenCrawl page fetch (no browser needed, much faster)
+  if (openCrawlApiUrl && candidate?.url) {
+    const enrichment = await enrichCandidateViaOpenCrawl(candidate, signalCache, openCrawlApiUrl);
+    if (enrichment !== null) {
+      // Apply enrichment to candidate
+      Object.assign(candidate, enrichment);
+      if (enrichment.comments_closed) return false;
+      if (enrichment.has_comment_form) return true;
+      // OpenCrawl returned data but no comment form found - trust it
+      return false;
+    }
+    // null means OpenCrawl fetch failed - fall through to Playwright
+  }
+
+  // 2. Fallback: Playwright HTTP request check (fast, no render)
+  const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
+  if (hasSignals) return true;
+
+  // 3. Fallback: Playwright full render check (slow but thorough)
+  return hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
+}
+
+function buildLinkRow(runId, counter, candidate, keyword) {
+  return {
+    id: `${runId}-${counter}`,
+    keyword: String(keyword || ""),
+    query: String(candidate.query || ""),
+    url: String(candidate.url || ""),
+    domain: String(candidate.domain || normalizeDomain(candidate.url || "")),
+    title: String(candidate.title || ""),
+    engine: String(candidate.engine || ""),
+    quality_score: Number(candidate.score || 0),
+    opportunity_type: String(candidate.opportunity_type || candidate.intent || detectOpportunityType(candidate.url || "", candidate.title || "")),
+    has_comment_form: Boolean(candidate.has_comment_form),
+    has_url_field: Boolean(candidate.has_url_field),
+    is_dofollow: candidate.is_dofollow !== false, // default true when unknown
+    da_estimate: Number(candidate.da_estimate || 0),
+    page_verified: Boolean(candidate.page_verified),
+    verified_via: String(candidate.verified_via || ""),
+    source: String(candidate.source || candidate.engine || ""),
+    collected_at: nowIso(),
+    status: "new",
+  };
+}
+
 async function run() {
   const runId = String(args["run-id"] || "").trim();
   const inputFile = String(args["input-file"] || "").trim();
@@ -753,6 +974,9 @@ async function run() {
   const effectiveHeadless = engine === "duckduckgo" ? false : headless;
   const perKeywordLimit = Math.max(1, Math.min(100, Number(payload.options?.results_per_keyword || 50)));
   const includeAllSites = payload?.options?.include_all_sites !== false;
+  const minQualityScore = Number(payload?.options?.min_quality_score ?? (includeAllSites ? 0 : 5));
+  const openCrawlApiUrl = String(process.env.OPENCRAWL_API_URL || payload?.options?.opencrawl_api_url || "").trim();
+  const useOpenCrawl = Boolean(openCrawlApiUrl);
 
   let browser = null;
   let context = null;
@@ -805,6 +1029,27 @@ async function run() {
         current_keyword: keyword,
         summary: `running_keyword:${keyword}`,
       }));
+
+      // ── OpenCrawl primary collection (no browser needed) ──────────────────
+      if (useOpenCrawl) {
+        try {
+          const ocResults = await collectOpenCrawl(keyword, templates, perKeywordLimit * 2, keywordSeen, openCrawlApiUrl);
+          for (const item of ocResults) {
+            if (globalSeen.has(item.url) || keywordCandidateSeen.has(item.url)) continue;
+            keywordCandidateSeen.add(item.url);
+            keywordSeen.add(item.url);
+            keywordCandidates.push(item);
+          }
+          patchRun(runId, (current) => ({
+            ...current,
+            updated_at: nowIso(),
+            summary: `opencrawl_collected:${keywordCandidates.length}:${keyword}`,
+          }));
+        } catch (_) {
+          // OpenCrawl failed - fall through to browser-based engines
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────
 
       for (const template of templates) {
         if (keywordLinks.length >= perKeywordLimit) break;
@@ -862,7 +1107,7 @@ async function run() {
                 keyword,
                 query: queryText,
               });
-              if (!includeAllSites && score < 8) continue;
+              if (!Number.isFinite(score) || score < minQualityScore) continue;
 
               keywordCandidateSeen.add(normalized);
               const effectiveIntent = templateIntent === "general" ? detectIntent(queryText, template) : templateIntent;
@@ -899,7 +1144,7 @@ async function run() {
         for (const candidate of sortedCandidates) {
           if (keywordLinks.length >= perKeywordLimit) break;
           if (globalSeen.has(candidate.url)) continue;
-          if (Number(candidate.score || 0) < threshold) continue;
+          if (Number(candidate.score || 0) < Math.max(threshold, minQualityScore)) continue;
 
           const hostKey = String(candidate.domain || "");
           const currentDomainCount = Number(perDomainCount.get(hostKey) || 0);
@@ -907,26 +1152,14 @@ async function run() {
 
           const candidateIntent = String(candidate.intent || detectIntent(candidate.query || ""));
           if (!includeAllSites && candidateIntent === "comment") {
-            const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
-            const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
-            if (!hasSignals && !hasRenderedSignals) continue;
+            const hasPageSignals = await checkPageSignals(context, verifyPage, candidate, signalCache, openCrawlApiUrl);
+            if (!hasPageSignals) continue;
           }
           if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
-          const linkRow = {
-                  id: `${runId}-${linkIdCounter++}`,
-                  keyword,
-                  query: candidate.query,
-                  url: candidate.url,
-                  domain: candidate.domain,
-                  title: candidate.title,
-                  engine: candidate.engine,
-                  quality_score: Number(candidate.score || 0),
-                  collected_at: nowIso(),
-                  status: "new",
-                };
+          const linkRow = buildLinkRow(runId, linkIdCounter++, candidate, keyword);
           keywordLinks.push(linkRow);
           allLinks.push(linkRow);
         }
@@ -939,33 +1172,21 @@ async function run() {
         for (const candidate of sortedCandidates) {
           if (keywordLinks.length >= perKeywordLimit) break;
           if (globalSeen.has(candidate.url)) continue;
-          if (Number(candidate.score || 0) < 18) continue;
+          if (Number(candidate.score || 0) < Math.max(18, minQualityScore)) continue;
           const hostKey = String(candidate.domain || "");
           const currentDomainCount = Number(perDomainCount.get(hostKey) || 0);
           if (!includeAllSites && currentDomainCount >= 2) continue;
           if (!looksLikeCommentPage(candidate)) continue;
           const candidateIntent = String(candidate.intent || detectIntent(candidate.query || ""));
           if (!includeAllSites && candidateIntent === "comment") {
-            const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
-            const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
-            if (!hasSignals && !hasRenderedSignals) continue;
+            const hasPageSignals = await checkPageSignals(context, verifyPage, candidate, signalCache, openCrawlApiUrl);
+            if (!hasPageSignals) continue;
           }
           if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
-          const linkRow = {
-            id: `${runId}-${linkIdCounter++}`,
-            keyword,
-            query: candidate.query,
-            url: candidate.url,
-            domain: candidate.domain,
-            title: candidate.title,
-            engine: candidate.engine,
-            quality_score: Number(candidate.score || 0),
-            collected_at: nowIso(),
-            status: "new",
-          };
+          const linkRow = buildLinkRow(runId, linkIdCounter++, candidate, keyword);
           keywordLinks.push(linkRow);
           allLinks.push(linkRow);
         }
@@ -976,7 +1197,7 @@ async function run() {
         for (const candidate of sortedCandidates) {
           if (keywordLinks.length >= perKeywordLimit) break;
           if (globalSeen.has(candidate.url)) continue;
-          if (Number(candidate.score || 0) < 5) continue;
+          if (Number(candidate.score || 0) < Math.max(5, minQualityScore)) continue;
           if (!String(candidate.query || "").trim()) continue;
 
           const hostKey = String(candidate.domain || "");
@@ -984,26 +1205,14 @@ async function run() {
           if (!includeAllSites && currentDomainCount >= 2) continue;
           const candidateIntent = String(candidate.intent || detectIntent(candidate.query || ""));
           if (!includeAllSites && candidateIntent === "comment") {
-            const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
-            const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
-            if (!hasSignals && !hasRenderedSignals) continue;
+            const hasPageSignals = await checkPageSignals(context, verifyPage, candidate, signalCache, openCrawlApiUrl);
+            if (!hasPageSignals) continue;
           }
           if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
-          const linkRow = {
-            id: `${runId}-${linkIdCounter++}`,
-            keyword,
-            query: candidate.query,
-            url: candidate.url,
-            domain: candidate.domain,
-            title: candidate.title,
-            engine: candidate.engine,
-            quality_score: Number(candidate.score || 0),
-            collected_at: nowIso(),
-            status: "new",
-          };
+          const linkRow = buildLinkRow(runId, linkIdCounter++, candidate, keyword);
           keywordLinks.push(linkRow);
           allLinks.push(linkRow);
         }
@@ -1014,7 +1223,7 @@ async function run() {
         for (const candidate of sortedCandidates) {
           if (keywordLinks.length >= perKeywordLimit) break;
           if (globalSeen.has(candidate.url)) continue;
-          if (!includeAllSites && Number(candidate.score || 0) < 0) continue;
+          if (Number(candidate.score || 0) < minQualityScore) continue;
 
           const candidateIntent = String(candidate.intent || detectIntent(candidate.query || ""));
           if (!includeAllSites && candidateIntent !== "comment") continue;
@@ -1024,26 +1233,14 @@ async function run() {
           const currentDomainCount = Number(perDomainCount.get(hostKey) || 0);
           if (!includeAllSites && currentDomainCount >= 2) continue;
           if (!includeAllSites && candidateIntent === "comment") {
-            const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
-            const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
-            if (!hasSignals && !hasRenderedSignals) continue;
+            const hasPageSignals = await checkPageSignals(context, verifyPage, candidate, signalCache, openCrawlApiUrl);
+            if (!hasPageSignals) continue;
           }
           if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
-          const linkRow = {
-            id: `${runId}-${linkIdCounter++}`,
-            keyword,
-            query: candidate.query,
-            url: candidate.url,
-            domain: candidate.domain,
-            title: candidate.title,
-            engine: candidate.engine,
-            quality_score: Number(candidate.score || 0),
-            collected_at: nowIso(),
-            status: "new",
-          };
+          const linkRow = buildLinkRow(runId, linkIdCounter++, candidate, keyword);
           keywordLinks.push(linkRow);
           allLinks.push(linkRow);
         }
@@ -1055,6 +1252,7 @@ async function run() {
         for (const candidate of sortedCandidates) {
           if (keywordLinks.length >= perKeywordLimit) break;
           if (globalSeen.has(candidate.url)) continue;
+          if (Number(candidate.score || 0) < minQualityScore) continue;
           if (!candidate?.url || !candidate?.domain) continue;
           const hay = `${String(candidate.url || "").toLowerCase()} ${String(candidate.title || "").toLowerCase()}`;
           if (SPAM_TERMS.some((term) => hay.includes(term))) continue;
@@ -1063,9 +1261,8 @@ async function run() {
           if (isBlockedDomain(String(candidate.domain || ""))) continue;
           const candidateIntent = String(candidate.intent || detectIntent(candidate.query || ""));
           if (!includeAllSites && candidateIntent === "comment") {
-            const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
-            const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
-            if (!hasSignals && !hasRenderedSignals) continue;
+            const hasPageSignals = await checkPageSignals(context, verifyPage, candidate, signalCache, openCrawlApiUrl);
+            if (!hasPageSignals) continue;
           }
 
           const hostKey = String(candidate.domain || "");
@@ -1075,18 +1272,7 @@ async function run() {
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
-          const linkRow = {
-            id: `${runId}-${linkIdCounter++}`,
-            keyword,
-            query: candidate.query,
-            url: candidate.url,
-            domain: candidate.domain,
-            title: candidate.title,
-            engine: candidate.engine,
-            quality_score: Number(candidate.score || 0),
-            collected_at: nowIso(),
-            status: "new",
-          };
+          const linkRow = buildLinkRow(runId, linkIdCounter++, candidate, keyword);
           keywordLinks.push(linkRow);
           allLinks.push(linkRow);
         }
