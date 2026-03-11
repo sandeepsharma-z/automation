@@ -83,9 +83,9 @@ function normalizeKeywords(value) {
 
 function normalizeTemplates(value) {
   const defaults = [
-    "inurl:blog \"leave a reply\" {keyword}",
-    "inurl:comment \"leave a reply\" {keyword}",
-    "inurl:forum \"register\" {keyword}",
+    "{keyword} \"leave a comment\" blog",
+    "{keyword} \"leave a reply\"",
+    "{keyword} \"post a comment\"",
     "\"write for us\" {keyword}",
   ];
   const lines = String(value || "")
@@ -104,6 +104,10 @@ function normalizeRunInput(payload = {}) {
   const headless = options.headless == null
     ? true
     : (String(options.headless) === "1" || options.headless === true);
+  const includeAllSites = options.include_all_sites == null
+    ? false
+    : options.include_all_sites !== false;
+  const minQualityScore = Math.max(0, Number(options.min_quality_score || 5));
   return {
     keywords: normalizeKeywords(payload.keywords),
     templates: normalizeTemplates(payload.template || payload.templates),
@@ -114,6 +118,8 @@ function normalizeRunInput(payload = {}) {
       headless,
       results_per_keyword: resultsPerKeyword,
       allow_engine_fallback: true,
+      include_all_sites: includeAllSites,
+      min_quality_score: minQualityScore,
     },
   };
 }
@@ -432,6 +438,15 @@ export function exportBacklinksFinderCsv(runId) {
     "domain",
     "title",
     "engine",
+    "opportunity_type",
+    "quality_score",
+    "da_estimate",
+    "has_comment_form",
+    "has_url_field",
+    "is_dofollow",
+    "page_verified",
+    "verified_via",
+    "source",
     "collected_at",
     "status",
   ];
@@ -446,6 +461,15 @@ export function exportBacklinksFinderCsv(runId) {
       item.domain || normalizeDomain(item.url || ""),
       item.title || "",
       item.engine || run.engine || "",
+      item.opportunity_type || "",
+      item.quality_score != null ? String(item.quality_score) : "",
+      item.da_estimate != null ? String(item.da_estimate) : "",
+      item.has_comment_form != null ? (item.has_comment_form ? "yes" : "no") : "",
+      item.has_url_field != null ? (item.has_url_field ? "yes" : "no") : "",
+      item.is_dofollow != null ? (item.is_dofollow ? "dofollow" : "nofollow") : "",
+      item.page_verified ? "yes" : "no",
+      item.verified_via || "",
+      item.source || item.engine || "",
       item.collected_at || run.created_at || "",
       item.status || "new",
     ].map(csvEscape).join(","));

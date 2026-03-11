@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker run:*)",
+      "Bash(docker info:*)",
+      "Bash(curl -s -X POST http://localhost:11235/crawl -H 'Content-Type: application/json' -d \"{urls: [https://html.duckduckgo.com/html/?q=accounting+blog&kl=us-en], priority: 5}\")"
+    ]
+  }
+}

@@ -31,37 +31,6 @@ function normalizeDomain(urlLike) {
   }
 }
 
-function candidateSearchUrls(baseEndpoint) {
-  const base = String(baseEndpoint || "").trim().replace(/\/+$/g, "");
-  if (!base) return [];
-  if (base.endsWith("/search")) return [base];
-  return [`${base}/search`, `${base}/api/search`, `${base}/v1/search`];
-}
-
-function candidateExtractUrls(baseEndpoint) {
-  const base = String(baseEndpoint || "").trim().replace(/\/+$/g, "");
-  if (!base) return [];
-  if (base.endsWith("/search")) {
-    const root = base.slice(0, -"/search".length);
-    return [`${root}/extract`, `${root}/fetch`, `${root}/page`];
-  }
-  return [`${base}/extract`, `${base}/fetch`, `${base}/page`];
-}
-
-function defaultLocalSearchUrls() {
-  const bases = [
-    "http://127.0.0.1:11235",
-    "http://localhost:11235",
-    "http://127.0.0.1:8080",
-    "http://localhost:8080",
-  ];
-  const out = [];
-  for (const base of bases) {
-    out.push(...candidateSearchUrls(base));
-  }
-  return [...new Set(out)];
-}
-
 function buildHeaders() {
   const apiKey = String(process.env.OPENCRAWL_API_KEY || "").trim();
   const headers = {
@@ -72,121 +41,144 @@ function buildHeaders() {
   return headers;
 }
 
-export async function fetchOpenCrawlSearch({ query, limit = 30, timeoutMs = 20000, apiUrl = "" } = {}) {
+/**
+ * Extract actual result links from DuckDuckGo HTML-only or Bing search page HTML.
+ * DDG HTML-only version has direct links or /l/?uddg= redirects.
+ * Bing has links in h2>a href= tags (when not JavaScript-gated).
+ */
+function extractSearchResultLinks(html, sourceUrl) {
+  const links = [];
+  const isDdg = String(sourceUrl || "").includes("duckduckgo.com");
+
+  if (isDdg) {
+    // DDG HTML: result links appear as:
+    //   href="//duckduckgo.com/l/?uddg=https%3A%2F%2Factualsite.com%2F...&rut=..."
+    // (protocol-relative URL, uddg= param contains the actual destination URL)
+    const uddgPattern = /href="[^"]*\/l\/\?uddg=(https?%3A%2F%2F[^"&]+)/gi;
+    let m;
+    while ((m = uddgPattern.exec(html)) !== null) {
+      try {
+        links.push({ url: decodeURIComponent(m[1]), title: "" });
+      } catch (_) {}
+    }
+    // Fallback: direct https:// links with result__a class
+    if (!links.length) {
+      const directPattern = /class="[^"]*result__a[^"]*"[^>]*href="(https?:\/\/[^"]+)"/gi;
+      while ((m = directPattern.exec(html)) !== null) {
+        const url = m[1];
+        if (url && !url.includes("duckduckgo.com")) links.push({ url, title: "" });
+      }
+    }
+  } else {
+    // Bing: result links typically appear as <h2><a href="https://...">
+    const bingPattern = /<h2[^>]*>\s*<a\s[^>]*href="(https?:\/\/[^"]+)"[^>]*>/gi;
+    let m;
+    while ((m = bingPattern.exec(html)) !== null) {
+      const url = m[1];
+      if (url && !url.includes("bing.com") && !url.includes("microsoft.com") && !url.includes("msn.com")) {
+        links.push({ url, title: "" });
+      }
+    }
+  }
+
+  return links;
+}
+
+/**
+ * Search for URLs using Crawl4AI as the browser backend.
+ * Uses Crawl4AI's POST /crawl endpoint to fetch DDG/Bing search pages and extracts result links.
+ */
+export async function fetchOpenCrawlSearch({ query, limit = 30, timeoutMs = 30000, apiUrl = "" } = {}) {
   const keyword = String(query || "").trim();
   if (!keyword) return { ok: false, error: "keyword_required", items: [] };
 
-  const endpoint = String(apiUrl || process.env.OPENCRAWL_API_URL || "").trim();
-  const candidates = endpoint ? candidateSearchUrls(endpoint) : defaultLocalSearchUrls();
-  if (!candidates.length) return { ok: false, error: "opencrawl_api_url_missing", items: [] };
+  const endpoint = String(apiUrl || process.env.OPENCRAWL_API_URL || "").trim().replace(/\/+$/g, "");
+  if (!endpoint) return { ok: false, error: "opencrawl_api_url_missing", items: [] };
 
-  const payload = {
-    query: keyword,
-    keyword,
-    mode: "keyword_search",
-    limit: Math.max(1, Math.min(Number(limit || 30), 200)),
-  };
+  // Use DDG HTML-only (no JS required) as primary, Bing as secondary
+  const searchUrls = [
+    `https://html.duckduckgo.com/html/?q=${encodeURIComponent(keyword)}&kl=us-en`,
+    `https://www.bing.com/search?q=${encodeURIComponent(keyword)}&count=30&setlang=en&cc=US`,
+  ];
 
-  let lastError = "opencrawl_failed";
-  for (const url of candidates) {
+  const items = [];
+  const seen = new Set();
+
+  for (const searchUrl of searchUrls) {
+    if (items.length >= limit) break;
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), Number(timeoutMs || 20000));
-      const resp = await fetch(url, {
+      const timer = setTimeout(() => controller.abort(), Number(timeoutMs || 30000));
+      const resp = await fetch(`${endpoint}/crawl`, {
         method: "POST",
         headers: buildHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ urls: [searchUrl], priority: 5 }),
         signal: controller.signal,
       });
       clearTimeout(timer);
-      if (!resp.ok) {
-        lastError = `opencrawl_http_${resp.status}`;
-        continue;
-      }
+      if (!resp.ok) continue;
+
       const data = await resp.json().catch(() => ({}));
-      if (data?.ok === false) {
-        lastError = String(data.error || "opencrawl_failed");
-        continue;
-      }
-      const rows = Array.isArray(data?.items)
-        ? data.items
-        : Array.isArray(data?.results)
-          ? data.results
-          : Array.isArray(data?.pages)
-            ? data.pages
-            : Array.isArray(data?.data)
-              ? data.data
-              : Array.isArray(data)
-                ? data
-                : [];
-      const items = [];
-      const seen = new Set();
-      for (const row of rows) {
-        const norm = normalizeUrl(row?.url || row?.link || "");
+      const result = Array.isArray(data?.results) ? data.results[0] : null;
+      if (!result?.success) continue;
+
+      const html = String(result.html || "");
+      if (!html) continue;
+
+      const extractedLinks = extractSearchResultLinks(html, searchUrl);
+      for (const link of extractedLinks) {
+        const norm = normalizeUrl(link.url);
         if (!norm || seen.has(norm)) continue;
         seen.add(norm);
         items.push({
           url: norm,
           domain: normalizeDomain(norm),
-          title: String(row?.title || "").trim(),
-          snippet: String(row?.snippet || row?.description || "").trim(),
-          discovered_at: String(row?.discovered_at || row?.first_seen || "") || null,
+          title: String(link.title || "").trim(),
+          snippet: "",
+          discovered_at: null,
         });
-        if (items.length >= payload.limit) break;
+        if (items.length >= limit) break;
       }
-      return { ok: true, provider: "opencrawl", items, fetched_at: nowIso() };
-    } catch (err) {
-      lastError = `opencrawl_request_failed:${String(err?.message || err)}`;
+    } catch (_) {
+      // Try next search engine
     }
   }
 
-  return { ok: false, error: lastError, items: [] };
+  if (!items.length) return { ok: false, error: "no_results", items: [] };
+  return { ok: true, provider: "opencrawl", items, fetched_at: nowIso() };
 }
 
+/**
+ * Fetch a single page's HTML via Crawl4AI's POST /crawl endpoint.
+ */
 export async function fetchOpenCrawlPage({ url, timeoutMs = 20000, apiUrl = "" } = {}) {
   const targetUrl = normalizeUrl(url);
   if (!targetUrl) return { ok: false, error: "invalid_url", html: "" };
 
-  const endpoint = String(apiUrl || process.env.OPENCRAWL_API_URL || "").trim();
-  const candidates = candidateExtractUrls(endpoint || "");
-  if (!candidates.length) return { ok: false, error: "opencrawl_api_url_missing", html: "" };
+  const endpoint = String(apiUrl || process.env.OPENCRAWL_API_URL || "").trim().replace(/\/+$/g, "");
+  if (!endpoint) return { ok: false, error: "opencrawl_api_url_missing", html: "" };
 
-  const payloads = [
-    { url: targetUrl, mode: "extract" },
-    { url: targetUrl, extract: true },
-    { target_url: targetUrl },
-  ];
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Number(timeoutMs || 20000));
+    const resp = await fetch(`${endpoint}/crawl`, {
+      method: "POST",
+      headers: buildHeaders(),
+      body: JSON.stringify({ urls: [targetUrl], priority: 3 }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!resp.ok) return { ok: false, error: `http_${resp.status}`, html: "" };
 
-  let lastError = "opencrawl_fetch_failed";
-  for (const endpointUrl of candidates) {
-    for (const payload of payloads) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), Number(timeoutMs || 20000));
-        const resp = await fetch(endpointUrl, {
-          method: "POST",
-          headers: buildHeaders(),
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-        if (!resp.ok) {
-          lastError = `opencrawl_http_${resp.status}`;
-          continue;
-        }
-        const data = await resp.json().catch(() => ({}));
-        if (data?.ok === false) {
-          lastError = String(data.error || "opencrawl_failed");
-          continue;
-        }
-        const html = String(data?.html || data?.raw_html || data?.content_html || data?.content || "");
-        if (html) return { ok: true, html, fetched_at: nowIso() };
-        lastError = "empty_response";
-      } catch (err) {
-        lastError = `opencrawl_request_failed:${String(err?.message || err)}`;
-      }
-    }
+    const data = await resp.json().catch(() => ({}));
+    const result = Array.isArray(data?.results) ? data.results[0] : null;
+    if (!result?.success) return { ok: false, error: "crawl_failed", html: "" };
+
+    const html = String(result.html || result.cleaned_html || "");
+    if (!html) return { ok: false, error: "empty_response", html: "" };
+
+    return { ok: true, html, fetched_at: nowIso() };
+  } catch (err) {
+    return { ok: false, error: `request_failed:${String(err?.message || err)}`, html: "" };
   }
-
-  return { ok: false, error: lastError, html: "" };
 }
