@@ -377,5 +377,77 @@
     "selectors": {},
     "created_at": "2026-03-10T10:34:05.043Z",
     "updated_at": "2026-03-10T11:22:55.073Z"
+  },
+  {
+    "name": "accountably.com",
+    "base_url": "https://accountably.com",
+    "domain": "accountably.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-03-11T08:13:40.597Z",
+    "updated_at": "2026-03-11T10:42:55.699Z"
+  },
+  {
+    "name": "jobifyindia.com",
+    "base_url": "https://jobifyindia.com",
+    "domain": "jobifyindia.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-03-11T08:13:40.605Z",
+    "updated_at": "2026-03-11T11:25:48.948Z"
+  },
+  {
+    "name": "blackridgeresearch.com",
+    "base_url": "https://blackridgeresearch.com",
+    "domain": "blackridgeresearch.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-03-11T08:13:40.612Z",
+    "updated_at": "2026-03-11T08:13:40.612Z"
+  },
+  {
+    "name": "infominergroup.com",
+    "base_url": "https://infominergroup.com",
+    "domain": "infominergroup.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-03-11T08:13:40.618Z",
+    "updated_at": "2026-03-11T08:13:40.618Z"
+  },
+  {
+    "name": "rapidkpo.co.uk",
+    "base_url": "https://rapidkpo.co.uk",
+    "domain": "rapidkpo.co.uk",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-03-11T08:13:40.625Z",
+    "updated_at": "2026-03-11T08:13:40.625Z"
+  },
+  {
+    "name": "ascentbpo.com",
+    "base_url": "https://ascentbpo.com",
+    "domain": "ascentbpo.com",
+    "allowed": true,
+    "type": "blog_commenting",
+    "notes": "Auto-allowlisted from queue intake.",
+    "required_fields": [],
+    "selectors": {},
+    "created_at": "2026-03-11T08:13:40.631Z",
+    "updated_at": "2026-03-11T12:10:56.146Z"
   }
 ]

@@ -18,6 +18,17 @@ const args = parseArgs(process.argv.slice(2));
 
 const PROJECT_ROOT = path.resolve(path.join(import.meta.dirname, ".."));
 const RUNS_ROOT = path.join(PROJECT_ROOT, "runs");
+
+// Load global profile defaults (saved from intake form / ops-entry page)
+function loadGlobalProfile() {
+  try {
+    const raw = fs.readFileSync(path.join(PROJECT_ROOT, "storage", "backlink_profile_defaults.json"), "utf8");
+    return JSON.parse(raw);
+  } catch (_) {
+    return {};
+  }
+}
+const GLOBAL_PROFILE = loadGlobalProfile();
 const HEADLESS = String(process.env.HEADLESS || "0") === "1";
 const APPROVAL_MODE = String(process.env.APPROVAL_MODE || "ui").toLowerCase();
 const RETRIES = 2;
@@ -1715,12 +1726,13 @@ async function readCommentContext(page) {
   }
 }
 
-async function composeBlogComment(page, row, targetLink) {
+async function composeBlogComment(page, row) {
   const pageContext = await readCommentContext(page);
   const heading = cleanSentence(pageContext.heading || pageContext.title, 110);
   const snippet = cleanSentence(pageContext.snippet, 160);
   const noteHint = cleanSentence(row.notes || row.company_description, 160);
-  const authorName = cleanSentence(row.company_name || row.site_name || row.username, 60);
+  const isEmailForAuthor = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ""));
+  const authorName = cleanSentence(row.company_name || (!isEmailForAuthor(row.username) ? row.username : ""), 60);
 
   const lines = [];
   if (heading) {
@@ -1737,10 +1749,10 @@ async function composeBlogComment(page, row, targetLink) {
     lines.push(`A related perspective: ${noteHint}`);
   }
 
-  if (targetLink) {
-    lines.push(`Reference: ${targetLink}`);
-  } else if (row.default_website_url) {
-    lines.push(`Reference: ${row.default_website_url}`);
+  // Only add our website as reference — never add the blog URL we're commenting on
+  const ourWebsite = row.default_website_url || GLOBAL_PROFILE.default_website_url || "";
+  if (ourWebsite) {
+    lines.push(`Reference: ${ourWebsite}`);
   }
 
   if (authorName) {
@@ -1754,8 +1766,8 @@ async function composeBlogComment(page, row, targetLink) {
   return `${text.slice(0, 519).trimEnd()}.`;
 }
 
-async function fillBlogCommentFields(page, row, detectedForm, targetLink, humanSimulator = null) {
-  const commentText = await composeBlogComment(page, row, targetLink);
+async function fillBlogCommentFields(page, row, detectedForm, humanSimulator = null) {
+  const commentText = await composeBlogComment(page, row);
 
   const fillVisibleCommentEditor = async (value) => {
     const editorSelectors = [
@@ -1918,9 +1930,12 @@ async function fillBlogCommentFields(page, row, detectedForm, targetLink, humanS
     }
   }
 
-  const nameValue = String(row.username || row.company_name || row.site_name || "").trim();
-  const emailValue = String(row.email || "").trim();
-  const websiteValue = String(row.default_website_url || targetLink || "").trim();
+  const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ""));
+  const rawName = !isEmail(row.username) && row.username ? row.username : "";
+  const nameValue = String(rawName || row.company_name || (!isEmail(GLOBAL_PROFILE.default_username) ? GLOBAL_PROFILE.default_username : "") || GLOBAL_PROFILE.company_name || "").trim();
+  const emailValue = String(row.email || GLOBAL_PROFILE.default_email || "").trim();
+  // For blog commenting the website field should always be OUR website (not the blog we're visiting)
+  const websiteValue = String(row.default_website_url || GLOBAL_PROFILE.default_website_url || "").trim();
 
   const optionalFieldSelectors = [
     { value: nameValue, selectors: ["input#author", "input[name='author']", "input[name*='name' i]", "input#comment_name"] },
@@ -2176,6 +2191,22 @@ async function processTargetLink({ browser, row, preparedRow, target, workflow, 
   const artifactBase = `pre_submit_${targetIndex + 1}`;
   const siteDir = path.join(RUNS_ROOT, RUN_ID, siteSlug);
 
+  // Enrich row with global profile defaults — fills empty fields for rows added without profile data
+  const enrichedRow = {
+    ...preparedRow,
+    username: preparedRow.username || GLOBAL_PROFILE.default_username || "",
+    email: preparedRow.email || GLOBAL_PROFILE.default_email || "",
+    company_name: preparedRow.company_name || GLOBAL_PROFILE.company_name || "",
+    default_website_url: preparedRow.default_website_url || GLOBAL_PROFILE.default_website_url || "",
+    company_description: preparedRow.company_description || GLOBAL_PROFILE.company_description || "",
+    company_address: preparedRow.company_address || GLOBAL_PROFILE.company_address || "",
+    company_phone: preparedRow.company_phone || GLOBAL_PROFILE.company_phone || "",
+  };
+  // For blog commenting, if target_links == directory_url (finder-added rows), use our website instead
+  const effectiveTargetLink = (workflow.type === "blog_commenting" && targetLink === (row.directory_url || row.site_url))
+    ? (enrichedRow.default_website_url || targetLink)
+    : targetLink;
+
   if (!workflow.uses_playwright) {
     return makeResult(
       targetLink,
@@ -2216,9 +2247,9 @@ async function processTargetLink({ browser, row, preparedRow, target, workflow, 
     if (workflow.type === "blog_commenting") {
       const adaptiveResult = await runAdaptiveBlogCommenting({
         page,
-        row: preparedRow,
+        row: enrichedRow,
         target,
-        targetLink,
+        targetLink: effectiveTargetLink,
         runDir: RUNS_ROOT,
         runId: RUN_ID,
         siteSlug,
@@ -2381,7 +2412,7 @@ async function processTargetLink({ browser, row, preparedRow, target, workflow, 
     }
 
     if (useCommentFlow) {
-      await fillBlogCommentFields(page, preparedRow, detectedCommentForm, targetLink, humanSimulator);
+      await fillBlogCommentFields(page, enrichedRow, detectedCommentForm, humanSimulator);
     } else {
       const rowForTarget = {
         ...preparedRow,

@@ -111,6 +111,10 @@ function localStorePath() {
   return path.join(projectRoot(), "storage", "local_rows.json");
 }
 
+function profileDefaultsPath() {
+  return path.join(projectRoot(), "storage", "backlink_profile_defaults.json");
+}
+
 function runsRoot() {
   return path.join(projectRoot(), "runs");
 }
@@ -282,6 +286,32 @@ function readStore() {
 
 function writeStore(data) {
   writeJson(localStorePath(), data);
+}
+
+export function loadProfileDefaults() {
+  const raw = readJson(profileDefaultsPath(), null);
+  if (!raw || typeof raw !== "object") return null;
+  return raw;
+}
+
+export function saveProfileDefaults(payload = {}) {
+  const normalized = normalizeInput(payload);
+  const stored = {
+    default_website_url: normalized.default_website_url,
+    default_site_name: normalized.site_name || normalized.company_name || "",
+    default_username: normalized.username,
+    default_email: normalized.email,
+    default_password: normalized.password,
+    company_name: normalized.company_name,
+    company_address: normalized.company_address,
+    company_phone: normalized.company_phone,
+    company_description: normalized.company_description,
+    category: normalized.category,
+    notes: normalized.notes,
+    saved_at: nowIso(),
+  };
+  writeJson(profileDefaultsPath(), stored);
+  return stored;
 }
 
 function healStaleRunningRows(maxAgeMs = 30 * 60 * 1000) {

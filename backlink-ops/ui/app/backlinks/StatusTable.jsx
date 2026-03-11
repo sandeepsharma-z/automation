@@ -215,6 +215,11 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
       setBulkRows((prev) => applyDefaultsToRows(prev, payload));
       setMessage("Profile defaults saved. Ab bulk rows add kar sakte ho.");
       setError("");
+      fetch("/api/backlinks/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
     } catch (err) {
       setError(`Unable to save profile defaults: ${String(err.message || err)}`);
     }
@@ -225,6 +230,37 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
       const raw = localStorage.getItem(getStorageKey());
       if (!raw) return false;
       const parsed = JSON.parse(raw);
+      const loaded = {
+        default_website_url: String(parsed.default_website_url || parsed.default_site_url || ""),
+        default_site_name: String(parsed.default_site_name || ""),
+        default_username: String(parsed.default_username || ""),
+        default_email: String(parsed.default_email || ""),
+        default_password: String(parsed.default_password || ""),
+        company_name: String(parsed.company_name || ""),
+        company_address: String(parsed.company_address || ""),
+        company_phone: String(parsed.company_phone || ""),
+        company_description: String(parsed.company_description || ""),
+        category: String(parsed.category || ""),
+        notes: String(parsed.notes || ""),
+      };
+      setForm((prev) => ({
+        ...prev,
+        ...loaded,
+        category: loaded.category || prev.category || "",
+      }));
+      setBulkRows((prev) => applyDefaultsToRows(prev, { ...loaded, category: loaded.category || form.category || "" }));
+      setProfileSavedAt(String(parsed.saved_at || ""));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+  async function loadProfileDefaultsFromServer() {
+    try {
+      const res = await fetch("/api/backlinks/profile", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok || !data?.profile) return false;
+      const parsed = data.profile;
       const loaded = {
         default_website_url: String(parsed.default_website_url || parsed.default_site_url || ""),
         default_site_name: String(parsed.default_site_name || ""),
@@ -504,6 +540,7 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
   useEffect(() => {
     if (!showRunNow) return;
     loadProfileDefaults();
+    loadProfileDefaultsFromServer();
   }, [showRunNow, selectedTypeSlug]);
 
   useEffect(() => {

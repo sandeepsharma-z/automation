@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { createQueueRow, createQueueRowsBulk, readQueueRows, removeQueueRow } from "../../../../lib/backend";
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const rows = await readQueueRows(250);
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(Number(searchParams.get("limit") || 250), 500);
+    const workflowType = searchParams.get("workflow_type") || searchParams.get("type") || "";
+    let rows = await readQueueRows(limit);
+    if (workflowType) {
+      rows = rows.filter((r) => String(r.workflow_type || "").toLowerCase() === workflowType.toLowerCase());
+    }
     return NextResponse.json({ rows });
   } catch (err) {
     return NextResponse.json({ error: String(err.message || err) }, { status: 500 });

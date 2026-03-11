@@ -8,6 +8,15 @@ export const metadata = {
   description: "Compliant human-in-loop backlink submission operations",
 };
 
+const NAV = [
+  { href: "/backlinks/intake",       label: "Fill Details",      icon: "📝" },
+  { href: "/backlinks/ops-entry",    label: "Blog Commenting",   icon: "💬" },
+  { href: "/backlinks/finder",       label: "Backlinks Finder",  icon: "🔍" },
+  { href: "/backlinks/table",        label: "Status Table",      icon: "📊" },
+  { href: "/backlinks/bulk-runs",    label: "Bulk Runs",         icon: "⚡" },
+  { href: "/backlinks/success-vault",label: "Success Vault",     icon: "✅" },
+];
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -16,14 +25,14 @@ export default function RootLayout({ children }) {
         <RecoveryFlagClearer />
         <div className="shell">
           <aside className="sidebar">
-            <h1>Backlink Operations</h1>
-            <div className="muted">Compliant flow only. Human approval required before submit.</div>
-            <nav className="nav" style={{ marginTop: 16 }}>
-              <Link href="/backlinks/intake">Fill Details</Link>
-              <Link href="/backlinks/table">Status Table</Link>
-              <Link href="/backlinks/finder">Backlinks Finder</Link>
-              <Link href="/backlinks/bulk-runs">Bulk Runs</Link>
-              <Link href="/backlinks/success-vault">Success Vault</Link>
+            <h1>Backlink Ops</h1>
+            <div className="muted" style={{ marginBottom: 20 }}>AI-powered · Human approved</div>
+            <nav className="nav">
+              {NAV.map(({ href, label, icon }) => (
+                <Link key={href} href={href}>
+                  <span style={{ fontSize: 15 }}>{icon}</span> {label}
+                </Link>
+              ))}
             </nav>
           </aside>
           <main className="content">{children}</main>

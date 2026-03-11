@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { URL, fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
-import { createQueueRow } from "./backend.js";
+import { createQueueRow, loadProfileDefaults } from "./backend.js";
 
 const FINDER_STORAGE_FILE = "backlink_finder_results.json";
 const FINDER_JOBS_DIR = "backlink_finder_jobs";
@@ -353,6 +353,13 @@ export function enqueueBacklinksFinderLinks({ runId, linkIds = [] } = {}) {
   const ids = new Set((Array.isArray(linkIds) ? linkIds : []).map((v) => String(v || "")).filter(Boolean));
   if (!ids.size) return { ok: true, added: 0, skipped: 0, queued_row_keys: [] };
 
+  const profileDefaults = loadProfileDefaults() || {};
+  const profileWebsite = String(profileDefaults.default_website_url || "").trim();
+  const profileUsername = String(profileDefaults.default_username || "").trim();
+  const profileEmail = String(profileDefaults.default_email || "").trim();
+  const profilePassword = String(profileDefaults.default_password || "").trim();
+  const profileSiteName = String(profileDefaults.default_site_name || profileDefaults.company_name || "").trim();
+
   const store = readFinderStore();
   const idx = store.runs.findIndex((item) => String(item?.run_id || "") === String(runId || ""));
   if (idx < 0) return { ok: false, error: "Run not found." };
@@ -387,8 +394,13 @@ export function enqueueBacklinksFinderLinks({ runId, linkIds = [] } = {}) {
       directory_url: normalized,
       site_url: normalized,
       site_name: String(link?.domain || ""),
-      target_links: normalized,
-      target_link: normalized,
+      default_website_url: profileWebsite,
+      username: profileUsername,
+      email: profileEmail,
+      password: profilePassword,
+      site_name: profileSiteName || String(link?.domain || ""),
+      target_links: profileWebsite || normalized,
+      target_link: profileWebsite || normalized,
       notes: `finder_meta:${JSON.stringify(meta)}`,
       tags: ["finder", String(meta.engine || "")].filter(Boolean),
       status: "queued",

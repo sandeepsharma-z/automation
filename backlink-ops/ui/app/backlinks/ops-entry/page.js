@@ -57,6 +57,26 @@ export default function OpsEntryPage() {
   const [submitResult, setSubmitResult] = useState(null);
   const [error, setError] = useState("");
 
+  // Live results
+  const [recentJobs, setRecentJobs] = useState([]);
+  const pollRef = useRef(null);
+
+  async function loadRecentJobs() {
+    try {
+      const res = await fetch("/api/backlinks/queue?limit=20&type=blog_commenting", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      setRecentJobs(rows.slice(0, 20));
+    } catch (_) {}
+  }
+
+  useEffect(() => {
+    loadRecentJobs();
+    pollRef.current = setInterval(loadRecentJobs, 5000);
+    return () => clearInterval(pollRef.current);
+  }, []);
+
   // Load profile from localStorage
   useEffect(() => {
     try {
@@ -64,12 +84,48 @@ export default function OpsEntryPage() {
       if (saved) setProfile((prev) => ({ ...prev, ...JSON.parse(saved) }));
     } catch (_) {}
   }, []);
+  useEffect(() => {
+    fetch("/api/backlinks/profile", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data?.profile) return;
+        setProfile((prev) => ({
+          ...prev,
+          website_url: data.profile.default_website_url || prev.website_url,
+          author_name: data.profile.default_username || prev.author_name,
+          email: data.profile.default_email || prev.email,
+          password: data.profile.default_password || prev.password,
+          company_name: data.profile.company_name || prev.company_name,
+          company_address: data.profile.company_address || prev.company_address,
+          company_phone: data.profile.company_phone || prev.company_phone,
+          company_description: data.profile.company_description || prev.company_description,
+          notes: data.profile.notes || prev.notes,
+        }));
+      })
+      .catch(() => {});
+  }, []);
 
   function saveProfile() {
     try {
       localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 2000);
+      fetch("/api/backlinks/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          default_website_url: profile.website_url,
+          default_username: profile.author_name,
+          default_email: profile.email,
+          default_password: profile.password,
+          default_site_name: profile.company_name || profile.author_name,
+          company_name: profile.company_name,
+          company_address: profile.company_address,
+          company_phone: profile.company_phone,
+          company_description: profile.company_description,
+          notes: profile.notes,
+        }),
+      }).catch(() => {});
     } catch (_) {}
   }
 
@@ -231,11 +287,11 @@ export default function OpsEntryPage() {
 
           <div className="two-col">
             <label className="field">
-              <span>Author / Username</span>
+              <span>Your Name <em>(shown as commenter name on blogs)</em></span>
               <input placeholder="John Smith" value={profile.author_name} onChange={(e) => setProfileField("author_name", e.target.value)} />
             </label>
             <label className="field">
-              <span>Email</span>
+              <span>Email <em>(filled in email field)</em></span>
               <input type="email" placeholder="you@email.com" value={profile.email} onChange={(e) => setProfileField("email", e.target.value)} />
             </label>
           </div>
@@ -440,125 +496,207 @@ export default function OpsEntryPage() {
         </button>
       </div>
 
+      {/* ── LIVE RESULTS ─────────────────────────────────────────────── */}
+      {recentJobs.length > 0 && (
+        <div className="card-inner results-panel" style={{ marginTop: 16 }}>
+          <div className="section-header">
+            <span>Recent Blog Comment Jobs</span>
+            <button className="btn-sm secondary" onClick={loadRecentJobs}>Refresh</button>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table className="link-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Blog URL</th>
+                  <th>Status</th>
+                  <th>Result</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentJobs.map((job, i) => {
+                  const blogUrl = String(job.input?.directory_url || job.directory_url || "");
+                  const st = String(job.output?.status || job.status || "queued");
+                  const createdLink = String(job.output?.created_link || job.created_link || "");
+                  const statusReason = String(job.output?.status_reason || job.status_reason || "");
+                  const createdAt = job.input?.created_at || job.created_at || "";
+                  const stClass = st === "success" || st === "completed" ? "status-completed"
+                    : st === "running" ? "status-running"
+                    : st === "failed" ? "status-failed"
+                    : "status-queued";
+                  return (
+                    <tr key={job.row_key || i}>
+                      <td className="num-cell">{job.row_key}</td>
+                      <td>
+                        <a href={blogUrl} target="_blank" rel="noreferrer" className="link-url">
+                          {blogUrl.replace(/^https?:\/\//, "").slice(0, 60)}
+                        </a>
+                      </td>
+                      <td><span className={`chip ${stClass}`}>{st}</span></td>
+                      <td className="result-cell">
+                        {createdLink
+                          ? <a href={createdLink} target="_blank" rel="noreferrer" className="link-url">View ↗</a>
+                          : <span className="muted">{statusReason.slice(0, 60) || "-"}</span>}
+                      </td>
+                      <td className="muted">{toRelativeTime(createdAt)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .ops-root { max-width: 1400px; margin: 0 auto; }
         .ops-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.7fr);
-          gap: 14px;
+          gap: 16px;
           align-items: start;
         }
         .card-inner {
           background: #fff;
-          border: 1px solid #d5e0f6;
-          border-radius: 12px;
-          padding: 16px;
+          border: 1px solid #dde5f7;
+          border-radius: 14px;
+          padding: 20px;
+          box-shadow: 0 2px 12px rgba(30,60,140,.07), 0 1px 3px rgba(30,60,140,.05);
         }
         .section-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 14px;
-          font-weight: 600;
-          font-size: 15px;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid #eef2fc;
+          font-weight: 700;
+          font-size: 14px;
+          color: #0f1c3a;
         }
         .two-col {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 10px;
+          gap: 12px;
         }
         .field {
           display: flex;
           flex-direction: column;
-          gap: 4px;
-          margin-bottom: 10px;
-          font-size: 13px;
+          gap: 5px;
+          margin-bottom: 12px;
         }
-        .field span, .field > label { color: #475569; }
-        .field em { font-style: normal; color: #94a3b8; }
+        .field span { font-size: 12.5px; font-weight: 600; color: #3d5080; }
+        .field em { font-style: normal; color: #94a3b8; font-weight: 400; }
         .field input, .field textarea, .field select {
-          border: 1px solid #d0dbf2;
-          border-radius: 8px;
-          padding: 8px 10px;
-          font-size: 13px;
+          border: 1.5px solid #dde5f7;
+          border-radius: 9px;
+          padding: 9px 12px;
+          font-size: 13.5px;
           background: #f8fbff;
+          transition: border-color .15s, box-shadow .15s;
+          outline: none;
+          color: #0f1c3a;
+        }
+        .field input:focus, .field textarea:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+          background: #fff;
         }
         .field textarea { resize: vertical; }
+        .field input::placeholder, .field textarea::placeholder { color: #b0bdd6; }
         .row { display: flex; align-items: center; gap: 8px; }
-        .muted { color: #64748b; }
+        .muted { color: #7a90b8; font-size: 12.5px; }
         .btn-sm {
-          padding: 5px 12px;
-          border-radius: 7px;
-          font-size: 12px;
+          padding: 6px 14px;
+          border-radius: 8px;
+          font-size: 12.5px;
+          font-weight: 600;
           cursor: pointer;
-          border: 1px solid #d0dbf2;
+          border: 1.5px solid #dde5f7;
           background: #f8fbff;
-          color: #1e3a8a;
+          color: #3d5080;
+          transition: all .15s;
         }
-        .btn-sm:hover { background: #eef4ff; }
-        .btn-sm.secondary { background: #f1f5f9; color: #475569; }
-        .runs-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+        .btn-sm:hover { background: #eff4ff; border-color: #2563eb; color: #2563eb; }
+        .btn-sm.secondary { background: #f1f5f9; color: #3d5080; border-color: #d1daf0; }
+        .runs-list { display: flex; flex-direction: column; gap: 7px; max-height: 340px; overflow-y: auto; }
         .run-item {
-          width: 100%; text-align: left; border: 1px solid #d0dbf2; border-radius: 8px;
-          padding: 8px 10px; background: #f8fbff; cursor: pointer; font-size: 13px;
+          width: 100%; text-align: left; border: 1.5px solid #dde5f7; border-radius: 10px;
+          padding: 10px 12px; background: #f8fbff; cursor: pointer; font-size: 13px;
+          transition: all .15s;
         }
-        .run-item:hover { background: #eef4ff; border-color: #9fb6e5; }
-        .run-item.is-active { background: #e8f0ff; border-color: #6a93db; }
-        .run-row { display: flex; justify-content: space-between; align-items: center; }
-        .run-meta { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 4px; }
+        .run-item:hover { background: #eff4ff; border-color: #93c5fd; }
+        .run-item.is-active { background: #eff4ff; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.1); }
+        .run-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+        .run-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: #7a90b8; margin-top: 5px; }
         .empty-hint {
-          border: 1px dashed #b8c8ea; border-radius: 8px; padding: 12px;
-          color: #64748b; font-size: 13px; background: #f8fbff;
+          border: 1.5px dashed #c5d5f0; border-radius: 10px; padding: 20px;
+          color: #7a90b8; font-size: 13.5px; text-align: center; background: #f8fbff;
         }
-        .empty-hint a { color: #1d4ed8; }
+        .empty-hint a { color: #2563eb; font-weight: 600; }
         .sticky-bar {
-          position: sticky; top: 0; z-index: 2; padding: 8px 0;
+          position: sticky; top: 0; z-index: 2; padding: 10px 0;
           background: #fff; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-          border-bottom: 1px solid #e8eef8; margin-bottom: 8px;
+          border-bottom: 1px solid #eef2fc; margin-bottom: 10px;
         }
         .sticky-bar input {
-          border: 1px solid #d0dbf2; border-radius: 8px; padding: 6px 10px;
-          font-size: 13px; background: #f8fbff;
+          border: 1.5px solid #dde5f7; border-radius: 9px; padding: 7px 12px;
+          font-size: 13px; background: #f8fbff; outline: none;
+          transition: border-color .15s;
         }
+        .sticky-bar input:focus { border-color: #2563eb; background: #fff; }
         .link-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .link-table th {
-          padding: 8px 10px; text-align: left; font-size: 12px;
-          background: #f0f5ff; border-bottom: 1px solid #d5e0f6; color: #475569;
-          position: sticky; top: 46px; z-index: 1;
+          padding: 9px 10px; text-align: left; font-size: 11.5px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: .04em;
+          background: #f5f8ff; border-bottom: 2px solid #dde5f7; color: #7a90b8;
+          position: sticky; top: 50px; z-index: 1;
         }
-        .link-table td { padding: 7px 10px; border-bottom: 1px solid #f0f4fb; vertical-align: top; }
-        .link-table tr.is-selected td { background: #eef4ff; }
-        .link-url { color: #1d4ed8; text-decoration: none; font-size: 12px; word-break: break-all; }
+        .link-table td { padding: 9px 10px; border-bottom: 1px solid #f0f4fb; vertical-align: middle; }
+        .link-table tr:hover td { background: #f5f8ff; }
+        .link-table tr.is-selected td { background: #eff4ff; }
+        .link-url { color: #2563eb; text-decoration: none; font-size: 12.5px; word-break: break-all; font-weight: 500; }
         .link-url:hover { text-decoration: underline; }
-        .link-title { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+        .link-title { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
         .chip {
-          display: inline-block; padding: 2px 8px; border-radius: 999px;
-          font-size: 11px; font-weight: 600; border: 1px solid #d4ddf1;
+          display: inline-block; padding: 3px 9px; border-radius: 999px;
+          font-size: 11px; font-weight: 700; border: 1px solid #d4ddf1;
         }
-        .status-completed, .status-success { background: #e9faef; border-color: #9ad9ac; color: #166534; }
-        .status-running { background: #e8f0ff; border-color: #9bb4ef; color: #1d4ed8; }
-        .status-no_results { background: #f8f8f8; border-color: #ccc; color: #64748b; }
-        .status-failed { background: #fff0f0; border-color: #efb1b1; color: #9f1239; }
-        .type-blog-comment { background: #eef4ff; border-color: #bdd0f5; color: #1e40af; }
+        .status-completed, .status-success { background: #f0fdf4; border-color: #86efac; color: #16a34a; }
+        .status-queued  { background: #f5f8ff; border-color: #bfdbfe; color: #1d4ed8; }
+        .status-running { background: #eff4ff; border-color: #93c5fd; color: #1d4ed8; }
+        .status-failed  { background: #fff1f1; border-color: #fca5a5; color: #dc2626; }
+        .status-no_results { background: #f8f8f8; border-color: #d1d5db; color: #6b7280; }
+        .type-blog-comment { background: #eff4ff; border-color: #bfdbfe; color: #1e40af; }
         .type-write-for-us { background: #f0fdf4; border-color: #86efac; color: #166534; }
-        .type-forum { background: #fef9c3; border-color: #fde68a; color: #92400e; }
-        .type-general { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+        .type-forum { background: #fefce8; border-color: #fde68a; color: #92400e; }
+        .type-general { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
         .submit-bar {
-          position: sticky; bottom: 0; background: #fff; z-index: 10;
-          border-top: 1px solid #d5e0f6; padding: 12px 0; margin-top: 14px;
+          position: sticky; bottom: 0; background: rgba(255,255,255,.97); backdrop-filter: blur(8px); z-index: 10;
+          border-top: 1px solid #dde5f7; padding: 14px 0; margin-top: 16px;
           display: flex; align-items: center; gap: 14px;
         }
         .btn-start {
-          padding: 11px 28px; background: #1d4ed8; color: #fff;
-          border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
-          cursor: pointer; white-space: nowrap;
+          padding: 13px 32px;
+          background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+          color: #fff; border: none; border-radius: 11px;
+          font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap;
+          box-shadow: 0 4px 16px rgba(37,99,235,.35);
+          transition: all .15s;
         }
-        .btn-start:hover:not(:disabled) { background: #1e40af; }
-        .btn-start:disabled { opacity: 0.55; cursor: not-allowed; }
-        .msg { font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid; }
-        .msg.error { background: #fff0f0; border-color: #fca5a5; color: #b91c1c; }
-        .msg.success { background: #e9faef; border-color: #86efac; color: #166534; }
-        .msg.success a { color: #166534; font-weight: 600; }
+        .btn-start:hover:not(:disabled) {
+          box-shadow: 0 6px 20px rgba(37,99,235,.45);
+          transform: translateY(-1px);
+        }
+        .btn-start:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .msg { font-size: 13px; padding: 10px 14px; border-radius: 9px; border: 1px solid; line-height: 1.5; }
+        .msg.error { background: #fff1f1; border-color: #fca5a5; color: #b91c1c; }
+        .msg.success { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+        .msg.success a { color: #15803d; font-weight: 600; text-decoration: underline; }
+        .results-panel { margin-top: 16px; }
+        .num-cell { font-size: 12px; color: #7a90b8; font-weight: 600; width: 40px; }
+        .result-cell { max-width: 280px; font-size: 12.5px; }
         @media (max-width: 900px) {
           .ops-grid { grid-template-columns: 1fr; }
           .two-col { grid-template-columns: 1fr; }

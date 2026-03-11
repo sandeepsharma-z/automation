@@ -1418,9 +1418,11 @@ export async function runAdaptiveBlogCommenting({
       artifacts,
     };
   }
-  const nameVal = String(row.username || row.company_name || row.site_name || "").trim();
+  const isEmailAddr = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ""));
+  const nameVal = String((!isEmailAddr(row.username) && row.username) || row.company_name || "").trim();
   const emailVal = String(row.email || "").trim();
-  const websiteVal = String(row.default_website_url || targetLink || "").trim();
+  // website field = OUR website (default_website_url), not the blog we're commenting on (targetLink)
+  const websiteVal = String(row.default_website_url || "").trim();
     if (nameVal) {
       await driver.type(mapped.name_selector, nameVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
       await forceFieldValue(mapped.name_selector, nameVal);
