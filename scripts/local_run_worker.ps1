@@ -53,15 +53,20 @@ Write-Host "Queues:  $workerQueues"
 Push-Location $repoRoot
 try {
     # Ensure only one worker is active to avoid duplicate task claims/status races.
-    Get-CimInstance Win32_Process |
-        Where-Object {
-            $_.Name -eq 'python.exe' -and
-            $_.CommandLine -match 'celery' -and
-            $_.CommandLine -match 'apps\.worker\.app\.celery_app\.celery_app'
-        } |
-        ForEach-Object {
-            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-        }
+    try {
+        Get-CimInstance Win32_Process |
+            Where-Object {
+                $_.Name -eq 'python.exe' -and
+                $_.CommandLine -match 'celery' -and
+                $_.CommandLine -match 'apps\.worker\.app\.celery_app\.celery_app'
+            } |
+            ForEach-Object {
+                Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            }
+    }
+    catch {
+        # Some shells deny WMI process enumeration.
+    }
 
     Start-Sleep -Milliseconds 700
 

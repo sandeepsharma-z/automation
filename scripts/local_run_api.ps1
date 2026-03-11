@@ -3,6 +3,7 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
 $venvPython = Join-Path $repoRoot '.venv/Scripts/python.exe'
+$venvAlembic = Join-Path $repoRoot '.venv/Scripts/alembic.exe'
 
 if (-not (Test-Path $venvPython)) {
     throw 'Missing .venv. Run ./scripts/local_setup.ps1 first.'
@@ -32,22 +33,37 @@ try {
     # Keep local schema aligned with current backend models before serving requests.
     Push-Location (Join-Path $repoRoot 'apps/api')
     try {
-        & $venvPython -m alembic -c alembic.ini upgrade head
+        try {
+            if (Test-Path $venvAlembic) {
+                & $venvAlembic -c alembic.ini upgrade head
+            }
+            else {
+                Write-Warning 'Skipping migrations: alembic.exe not found in .venv/Scripts.'
+            }
+        }
+        catch {
+            Write-Warning "Skipping migrations due to error: $($_.Exception.Message)"
+        }
     }
     finally {
         Pop-Location
     }
 
     # Prevent split-brain API state by stopping any previous uvicorn process first.
-    Get-CimInstance Win32_Process |
-        Where-Object {
-            $_.Name -eq 'python.exe' -and
-            $_.CommandLine -match 'uvicorn' -and
-            $_.CommandLine -match 'apps\.api\.app\.main:app'
-        } |
-        ForEach-Object {
-            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-        }
+    try {
+        Get-CimInstance Win32_Process |
+            Where-Object {
+                $_.Name -eq 'python.exe' -and
+                $_.CommandLine -match 'uvicorn' -and
+                $_.CommandLine -match 'apps\.api\.app\.main:app'
+            } |
+            ForEach-Object {
+                Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            }
+    }
+    catch {
+        # Some shells deny WMI process enumeration.
+    }
 
     Start-Sleep -Milliseconds 700
 

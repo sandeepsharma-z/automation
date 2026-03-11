@@ -57,7 +57,7 @@ from app.services.rag.vectorstore import (
     retrieve_internal_link_candidates,
 )
 from app.services.settings import resolve_project_runtime_config
-from app.services.storage.media_storage import guess_image_extension, save_binary_image
+from app.services.media_storage import guess_image_extension, save_binary_image
 
 
 def slugify(text: str) -> str:

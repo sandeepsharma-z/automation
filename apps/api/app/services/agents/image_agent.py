@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.entities import Draft, DraftImage, Project, Topic
 from app.services.providers.openai_provider import OpenAIProvider
 from app.services.settings import resolve_project_runtime_config
-from app.services.storage.media_storage import guess_image_extension, save_binary_image
+from app.services.media_storage import guess_image_extension, save_binary_image
 
 
 def _public_media_path(value: str | None) -> str | None:

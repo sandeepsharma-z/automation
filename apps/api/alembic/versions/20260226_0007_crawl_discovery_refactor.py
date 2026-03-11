@@ -83,16 +83,6 @@ def upgrade() -> None:
             )
         )
 
-        inspector = sa.inspect(bind)
-        serp_indexes = _index_names(inspector, 'serp_runs')
-        if 'ix_serp_runs_expires_at' in serp_indexes:
-            op.drop_index('ix_serp_runs_expires_at', table_name='serp_runs')
-        if 'ix_serp_runs_fetched_at' in serp_indexes:
-            op.drop_index('ix_serp_runs_fetched_at', table_name='serp_runs')
-        if 'ix_serp_runs_project_id' in serp_indexes:
-            op.drop_index('ix_serp_runs_project_id', table_name='serp_runs')
-        if 'ix_serp_runs_cache_key' in serp_indexes:
-            op.drop_index('ix_serp_runs_cache_key', table_name='serp_runs')
         op.drop_table('serp_runs')
 
     inspector = sa.inspect(bind)
@@ -196,13 +186,4 @@ def downgrade() -> None:
                 batch.drop_column('discovery_order')
 
     if _table_exists(sa.inspect(bind), 'crawl_runs'):
-        crawl_indexes = _index_names(sa.inspect(bind), 'crawl_runs')
-        if 'ix_crawl_runs_expires_at' in crawl_indexes:
-            op.drop_index('ix_crawl_runs_expires_at', table_name='crawl_runs')
-        if 'ix_crawl_runs_fetched_at' in crawl_indexes:
-            op.drop_index('ix_crawl_runs_fetched_at', table_name='crawl_runs')
-        if 'ix_crawl_runs_project_id' in crawl_indexes:
-            op.drop_index('ix_crawl_runs_project_id', table_name='crawl_runs')
-        if 'ix_crawl_runs_cache_key' in crawl_indexes:
-            op.drop_index('ix_crawl_runs_cache_key', table_name='crawl_runs')
         op.drop_table('crawl_runs')
