@@ -8,8 +8,8 @@ import { createBrowserDriver } from "./browser_driver.js";
 const DOMAIN_HISTORY_FILE = path.resolve(import.meta.dirname, "..", "storage", "backlink-ops", "domain_comment_history.json");
 const MAX_DOMAIN_HISTORY = 120;
 const MAX_GLOBAL_HISTORY = 800;
-const DOMAIN_SIM_THRESHOLD = 0.55;
-const GLOBAL_SIM_THRESHOLD = 0.65;
+const DOMAIN_SIM_THRESHOLD = Number(process.env.BLOG_COMMENT_DOMAIN_SIM_THRESHOLD || 0.55);
+const GLOBAL_SIM_THRESHOLD = Number(process.env.BLOG_COMMENT_GLOBAL_SIM_THRESHOLD || 0.65);
 const RELIABILITY_DELAYS = {
   afterNavigationMs: 2000,
   afterScrollMs: 500,
@@ -988,6 +988,143 @@ export async function runAdaptiveBlogCommenting({
   const waitForManualVerification = String(process.env.BLOG_COMMENT_WAIT_FOR_MANUAL_VERIFICATION || "0").trim() !== "0";
   const verificationWaitMs = Math.max(10000, Number(process.env.BLOG_COMMENT_VERIFICATION_WAIT_MS || 15 * 60 * 1000));
   const verificationPollMs = Math.max(1500, Number(process.env.BLOG_COMMENT_VERIFICATION_POLL_MS || 5000));
+  const forceManualApproval = String(process.env.BLOG_COMMENT_FORCE_MANUAL_APPROVAL || "0").trim() === "1";
+  const prefillOnly = String(process.env.BLOG_COMMENT_PREFILL_ONLY || "0").trim() === "1";
+  const skipDuplicateBlock = String(process.env.BLOG_COMMENT_SKIP_DUPLICATE_BLOCK || "0").trim() === "1";
+
+  const forceFieldValue = async (selector, value) => {
+    const val = String(value || "").trim();
+    if (!val) return false;
+    return driver.evaluate(({ sel, v }) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      const tag = String(el.tagName || "").toLowerCase();
+      if (tag === "textarea" || tag === "input") {
+        el.focus();
+        el.value = v;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        el.dispatchEvent(new Event("blur", { bubbles: true }));
+        return String(el.value || "").trim().length > 0;
+      }
+      if (el.isContentEditable) {
+        el.focus();
+        el.textContent = v;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        el.dispatchEvent(new Event("blur", { bubbles: true }));
+        return String(el.textContent || "").trim().length > 0;
+      }
+      return false;
+    }, { sel: selector, v: val }).catch(() => false);
+  };
+
+  const ensureCheckboxTicked = async () => {
+    return driver.evaluate(() => {
+      const hint = /(save my name|remember me|save my|consent|cookie|email.*website)/i;
+      const inputs = Array.from(document.querySelectorAll("input[type='checkbox'], [role='checkbox']"));
+      for (const el of inputs) {
+        const label = document.querySelector(`label[for='${el.id}']`);
+        const text = String(label?.textContent || el.getAttribute("aria-label") || el.getAttribute("title") || "").toLowerCase();
+        if (!hint.test(text)) continue;
+        const checked = (el instanceof HTMLInputElement) ? el.checked : el.getAttribute("aria-checked") === "true";
+        if (!checked) {
+          label?.click?.();
+          el?.click?.();
+        }
+      }
+
+      const labels = Array.from(document.querySelectorAll("label")).filter((l) => hint.test(String(l.textContent || "").toLowerCase()));
+      for (const label of labels) {
+        const forId = label.getAttribute("for");
+        if (forId) {
+          const linked = document.getElementById(forId);
+          if (linked && linked instanceof HTMLInputElement && linked.type === "checkbox" && !linked.checked) {
+            label.click();
+            linked.click();
+          }
+        } else {
+          const box = label.querySelector("input[type='checkbox']");
+          if (box && !box.checked) {
+            label.click();
+            box.click();
+          }
+        }
+      }
+      return true;
+    }).catch(() => false);
+  };
+
+  const autoMapFields = async () => {
+    return driver.evaluate(() => {
+      const isVisible = (el) => {
+        if (!el) return false;
+        const s = window.getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        return s.display !== "none" && s.visibility !== "hidden" && r.width > 4 && r.height > 4;
+      };
+      const pickSelector = (el) => {
+        if (!el) return "";
+        const id = el.getAttribute("id");
+        if (id) return `#${CSS.escape(id)}`;
+        const name = el.getAttribute("name");
+        if (name) return `${el.tagName.toLowerCase()}[name="${CSS.escape(name)}"]`;
+        const placeholder = el.getAttribute("placeholder");
+        if (placeholder) return `${el.tagName.toLowerCase()}[placeholder="${CSS.escape(placeholder)}"]`;
+        return "";
+      };
+      const inputs = Array.from(document.querySelectorAll("input, textarea")).filter((el) => {
+        if (el.tagName.toLowerCase() === "textarea") return true;
+        const type = String(el.getAttribute("type") || "text").toLowerCase();
+        return ["text", "email", "url"].includes(type);
+      }).filter(isVisible);
+      const score = (el, patterns) => {
+        const hay = [
+          el.getAttribute("name") || "",
+          el.getAttribute("id") || "",
+          el.getAttribute("placeholder") || "",
+          el.getAttribute("aria-label") || "",
+          el.getAttribute("title") || "",
+          String(el.closest("label")?.textContent || ""),
+        ].join(" ").toLowerCase();
+        let s = 0;
+        for (const p of patterns) {
+          if (hay.includes(p)) s += 2;
+        }
+        const type = String(el.getAttribute("type") || "").toLowerCase();
+        if (patterns.includes("email") && type === "email") s += 6;
+        if (patterns.includes("url") && type === "url") s += 5;
+        return s;
+      };
+
+      const emailPatterns = ["email", "e-mail"];
+      const namePatterns = ["name", "author", "full name", "your name"];
+      const websitePatterns = ["website", "url", "site", "web"];
+
+      const ranked = (patterns) => inputs
+        .map((el) => ({ el, score: score(el, patterns) }))
+        .filter((row) => row.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      const emailEl = ranked(emailPatterns)[0]?.el || inputs.find((el) => String(el.getAttribute("type") || "").toLowerCase() === "email") || null;
+      const websiteEl = ranked(websitePatterns)[0]?.el || inputs.find((el) => String(el.getAttribute("type") || "").toLowerCase() === "url") || null;
+      let nameEl = ranked(namePatterns)[0]?.el || null;
+      if (!nameEl) {
+        nameEl = inputs.find((el) => {
+          const type = String(el.getAttribute("type") || "text").toLowerCase();
+          if (type !== "text") return false;
+          if (el === emailEl || el === websiteEl) return false;
+          return true;
+        }) || null;
+      }
+
+      return {
+        email: pickSelector(emailEl),
+        name: pickSelector(nameEl),
+        website: pickSelector(websiteEl),
+      };
+    }).catch(() => ({ email: "", name: "", website: "" }));
+  };
   const siteDir = path.join(runDir, runId, siteSlug);
   const sourceUrl = extractPrimaryUrl(row?.directory_url || row?.site_url || "");
   logger?.log?.({
@@ -1148,6 +1285,38 @@ export async function runAdaptiveBlogCommenting({
     form_selector: String(target?.selectors?.form || detection.form_selector || "form").trim(),
   };
 
+  const selectorLooksLike = async (selector, hint) => {
+    if (!selector) return false;
+    return driver.evaluate(({ sel, h }) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      const type = String(el.getAttribute("type") || "").toLowerCase();
+      const hay = [
+        el.getAttribute("name") || "",
+        el.getAttribute("id") || "",
+        el.getAttribute("placeholder") || "",
+        el.getAttribute("aria-label") || "",
+        el.getAttribute("title") || "",
+        String(el.closest("label")?.textContent || ""),
+      ].join(" ").toLowerCase();
+      if (h === "email") return type === "email" || hay.includes("email");
+      if (h === "website") return type === "url" || hay.includes("website") || hay.includes("url");
+      if (h === "name") return hay.includes("name") || hay.includes("author");
+      return false;
+    }, { sel: selector, h: hint }).catch(() => false);
+  };
+
+  const autoMap = await autoMapFields();
+  if (autoMap?.email && (!(await driver.exists(mapped.email_selector)) || !(await selectorLooksLike(mapped.email_selector, "email")))) {
+    mapped.email_selector = autoMap.email;
+  }
+  if (autoMap?.name && (!(await driver.exists(mapped.name_selector)) || !(await selectorLooksLike(mapped.name_selector, "name")))) {
+    mapped.name_selector = autoMap.name;
+  }
+  if (autoMap?.website && (!(await driver.exists(mapped.website_selector)) || !(await selectorLooksLike(mapped.website_selector, "website")))) {
+    mapped.website_selector = autoMap.website;
+  }
+
   const readyBox = await enforceFormVisible(driver, mapped.comment_box_selector);
   if (!readyBox) {
     const artifacts = await captureArtifacts({
@@ -1206,7 +1375,8 @@ export async function runAdaptiveBlogCommenting({
     await sleep(100 + Math.floor(Math.random() * 180));
   }
 
-  await driver.type(mapped.comment_box_selector, selected, { charByChar: false, typingDelayRange: typingDelay }).catch(() => {});
+  await driver.type(mapped.comment_box_selector, selected, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+  await forceFieldValue(mapped.comment_box_selector, selected);
   const hasCommentAfterInitialType = await driver.evaluate((sel) => {
     const el = document.querySelector(sel);
     if (!el) return false;
@@ -1251,9 +1421,35 @@ export async function runAdaptiveBlogCommenting({
   const nameVal = String(row.username || row.company_name || row.site_name || "").trim();
   const emailVal = String(row.email || "").trim();
   const websiteVal = String(row.default_website_url || targetLink || "").trim();
-  if (nameVal) await driver.type(mapped.name_selector, nameVal, { typingDelayRange: typingDelay }).catch(() => {});
-  if (emailVal) await driver.type(mapped.email_selector, emailVal, { typingDelayRange: typingDelay }).catch(() => {});
-  if (websiteVal) await driver.type(mapped.website_selector, websiteVal, { typingDelayRange: typingDelay }).catch(() => {});
+    if (nameVal) {
+      await driver.type(mapped.name_selector, nameVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+      await forceFieldValue(mapped.name_selector, nameVal);
+    }
+    if (emailVal) {
+      await driver.type(mapped.email_selector, emailVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+      await forceFieldValue(mapped.email_selector, emailVal);
+    }
+    if (websiteVal) {
+      await driver.type(mapped.website_selector, websiteVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+      await forceFieldValue(mapped.website_selector, websiteVal);
+    }
+
+    await ensureCheckboxTicked();
+
+    await driver.evaluate(() => {
+      const textHints = /(save my name|remember me|save my|consent|cookie)/i;
+      const candidates = Array.from(document.querySelectorAll("input[type='checkbox'], [role='checkbox']"));
+      for (const box of candidates) {
+        const label = document.querySelector(`label[for='${box.id}']`);
+        const labelText = String(label?.textContent || box.getAttribute("aria-label") || "").toLowerCase();
+        if (!textHints.test(labelText)) continue;
+        const isChecked = (box instanceof HTMLInputElement) ? box.checked : box.getAttribute("aria-checked") === "true";
+        if (!isChecked) {
+          label?.click?.();
+          box?.click?.();
+        }
+      }
+    }).catch(() => {});
   logDebugState(logger, {
     rowKey,
     siteName,
@@ -1280,7 +1476,8 @@ export async function runAdaptiveBlogCommenting({
     rowKey,
     mode: approvalMode,
     artifactNameBase: "pre_submit_adaptive",
-    forceManual: true,
+    forceManual: forceManualApproval,
+    prefillOnly,
     requestPayload: {
       status: "ready_to_submit",
       driver_used: driver.name,
@@ -1330,7 +1527,7 @@ export async function runAdaptiveBlogCommenting({
   const finalDomainSim = bestSimilarityAgainst(domainEntries, finalDraft);
   const finalGlobalSim = bestSimilarityAgainst(globalEntries, finalDraft);
 
-  if (finalDomainSim >= DOMAIN_SIM_THRESHOLD || finalGlobalSim >= GLOBAL_SIM_THRESHOLD) {
+  if (!skipDuplicateBlock && (finalDomainSim >= DOMAIN_SIM_THRESHOLD || finalGlobalSim >= GLOBAL_SIM_THRESHOLD)) {
     const regenPack = generateDraftSet({ facts, domainEntries, globalEntries, maxAttempts: 3, forcePhrase: true });
     await requestHumanApproval({
       page,
@@ -1342,7 +1539,7 @@ export async function runAdaptiveBlogCommenting({
       mode: "ui",
       artifactNameBase: "similarity_ready_to_submit",
       forceManual: true,
-      prefillOnly: true,
+      prefillOnly: forceManualApproval || prefillOnly,
       requestPayload: {
         status: "ready_to_submit",
         duplicate_warning: "Similarity block triggered before submit. New drafts generated.",
@@ -1375,7 +1572,7 @@ export async function runAdaptiveBlogCommenting({
     };
   }
 
-  await driver.type(mapped.comment_box_selector, finalDraft, { charByChar: false, typingDelayRange: typingDelay }).catch(() => {});
+  await driver.type(mapped.comment_box_selector, finalDraft, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
 
   const beforeSubmitUrl = String(page.url() || "");
   logDebugState(logger, {
@@ -1442,7 +1639,7 @@ export async function runAdaptiveBlogCommenting({
     };
   }
 
-  if (post.isDuplicate) {
+  if (!skipDuplicateBlock && post.isDuplicate) {
     const regenPack = generateDraftSet({ facts, domainEntries, globalEntries, maxAttempts: 3, forcePhrase: true });
     await requestHumanApproval({
       page,
@@ -1454,7 +1651,7 @@ export async function runAdaptiveBlogCommenting({
       mode: "ui",
       artifactNameBase: "duplicate_ready_to_submit",
       forceManual: true,
-      prefillOnly: true,
+      prefillOnly: forceManualApproval || prefillOnly,
       requestPayload: {
         status: "ready_to_submit",
         duplicate_warning: "Duplicate detected. New drafts generated.",

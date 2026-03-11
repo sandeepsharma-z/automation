@@ -663,6 +663,27 @@ def _sanitize_placeholder_cta_text(value: str) -> str:
     return text
 
 
+def _is_low_quality_anchor_text(value: str) -> bool:
+    anchor = _normalize_space(str(value or '')).lower()
+    if not anchor:
+        return True
+    bad_phrases = {
+        'trusted seller',
+        'trusted sellers',
+        'click here',
+        'read more',
+        'learn more',
+        'visit now',
+        'official product page',
+        'official product pages',
+    }
+    if anchor in bad_phrases:
+        return True
+    if len(anchor) < 4:
+        return True
+    return False
+
+
 def _faq_has_offtopic_or_banned_answers(html: str, primary_keyword: str) -> bool:
     pairs = _extract_faq_pairs_from_html(html)
     if not pairs:
@@ -885,6 +906,9 @@ def _build_fallback_html(
     sections: list[str] = []
     secondary = [kw for kw in (secondary_keywords or []) if kw]
     link_index = 0
+    closing_cta = _sanitize_placeholder_cta_text(
+        str(cta_text or f'Use this framework to choose the right {keyword} path with confidence.')
+    ).strip()
     for idx, heading in enumerate(headings):
         sec_kw = secondary[idx % len(secondary)] if secondary else ''
         if food_mode:
@@ -926,7 +950,7 @@ def _build_fallback_html(
             example = (
                 f"<p><strong>Practical example:</strong> a buyer comparing {keyword} variants typically gets better results "
                 "when they evaluate authenticity markers, process clarity, and freshness cues together rather than choosing by price alone.</p>"
-                f"<p>This section should answer one concrete buyer question about {sec_kw or keyword} and give one actionable next step so readers can apply the guidance immediately.</p>"
+                f"<p>Focus each subsection on one practical buyer decision around {sec_kw or keyword}, then close with one clear next step.</p>"
             )
         else:
             para_1 = (
@@ -973,18 +997,21 @@ def _build_fallback_html(
         if link_index < len(links):
             link = links[link_index]
             link_index += 1
+            link_anchor = _sanitize_placeholder_cta_text(str(link.get('anchor', 'related resource'))).strip()
+            if _is_low_quality_anchor_text(link_anchor):
+                link_anchor = 'related resource'
             cta_patterns = [
                 "Read more: <a href=\"{url}\">{anchor}</a> for practical examples.",
                 "Explore related details here: <a href=\"{url}\">{anchor}</a>.",
                 "If you want a deeper breakdown, see <a href=\"{url}\">{anchor}</a>.",
                 "For next-step guidance, check <a href=\"{url}\">{anchor}</a>.",
             ]
-            cta_text = cta_patterns[idx % len(cta_patterns)].format(
+            section_link_cta = cta_patterns[idx % len(cta_patterns)].format(
                 url=link.get('url', '#'),
-                anchor=link.get('anchor', 'related resource'),
+                anchor=link_anchor,
             )
             link_para = (
-                f"<p>{cta_text}</p>"
+                f"<p>{section_link_cta}</p>"
             )
         sections.append(
             f"<h2>{heading}</h2>{para_1}{para_2}{para_3}{para_4}{checklist}{evaluation_block}{example}{link_para}"
@@ -996,7 +1023,7 @@ def _build_fallback_html(
         "Use this guide as a decision framework, then validate options based on your goals, timeline, and budget.</p>"
         f"<p>When readers understand what to expect and which red flags to avoid, conversion quality improves naturally "
         "because trust is built through clarity.</p>"
-        f"<p><strong>{cta_text or f'Use this framework to choose the right {keyword} path with confidence.'}</strong></p>"
+        f"<p><strong>{closing_cta}</strong></p>"
     )
 
     seed_faqs = _normalize_faqs(faqs, keyword)
@@ -2066,6 +2093,11 @@ def _sanitize_generated_blog_html(html: str) -> str:
         '',
         cleaned_html,
     )
+    cleaned_html = re.sub(
+        r'(?is)\bfor\s+[^.?!<]{3,220}\s*(,|:)?\s*(prioritize|map|compare|verify|use|align|focus|refine|optimize|structure)\b[^.?!<]*[.?!]',
+        ' ',
+        cleaned_html,
+    )
     cleaned_html = _sanitize_placeholder_cta_text(cleaned_html)
     return cleaned_html
 
@@ -2308,8 +2340,10 @@ def _ensure_internal_links_placement(
     seen_urls: set[str] = set()
     for row in candidates:
         url = str(row.get('url') or '').strip()
-        anchor = str(row.get('anchor') or '').strip()
+        anchor = _sanitize_placeholder_cta_text(str(row.get('anchor') or '')).strip()
         if not url or not anchor:
+            continue
+        if _is_low_quality_anchor_text(anchor):
             continue
         if keyword_terms:
             hay = f"{anchor} {url}".lower()
@@ -2579,6 +2613,9 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             library_urls.add(normalized)
 
     project_host = (urlparse(project.base_url or '').netloc or '').lower().replace('www.', '')
+    project_host_labels = [x for x in project_host.split('.') if x]
+    project_brand_token = project_host_labels[0] if project_host_labels else ''
+    project_settings = project.settings_json or {}
     internal_hosts: set[str] = set()
     for row in augmented_library:
         candidate_url = str(row.get('url') or '').strip()
@@ -2589,10 +2626,35 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             internal_hosts.add(host)
     if project_host:
         internal_hosts.add(project_host)
+    for key in (
+        'shopify_store_domain',
+        'shopify_domain',
+        'shopify_store_url',
+        'shopify_url',
+        'wordpress_site_url',
+        'site_url',
+    ):
+        raw = str(project_settings.get(key) or '').strip()
+        if not raw:
+            continue
+        normalized = raw if raw.startswith('http') else f'https://{raw}'
+        host = (urlparse(normalized).netloc or '').lower().replace('www.', '')
+        if host:
+            internal_hosts.add(host)
+
+    def _is_project_owned_host(host: str) -> bool:
+        norm = str(host or '').lower().replace('www.', '').strip()
+        if not norm:
+            return False
+        if norm in internal_hosts:
+            return True
+        if project_brand_token and project_brand_token in {part for part in norm.split('.') if part}:
+            return True
+        return False
 
     def _is_external(url: str) -> bool:
         host = (urlparse(url or '').netloc or '').lower().replace('www.', '')
-        return bool(host) and host not in internal_hosts
+        return bool(host) and not _is_project_owned_host(host)
 
     def _is_content_internal_url(url: str) -> bool:
         raw = str(url or '').strip()
@@ -2648,12 +2710,22 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             'pinterest.com',
             'reddit.com',
             'wikipedia.org',
+            'amazon.in',
+            'amazon.com',
+            'flipkart.com',
+            'meesho.com',
+            'jiomart.com',
+            'blinkit.com',
+            'zepto.com',
+            'indiamart.com',
+            'myshopify.com',
         }
         if domain in blocked_domains or any(domain.endswith(f'.{d}') for d in blocked_domains):
             return False
         path = (parsed.path or '/').lower()
         query = (parsed.query or '').lower()
-        hay = f"{path} {query} {str(title or '').lower()}"
+        title_l = str(title or '').lower()
+        hay = f"{path} {query} {title_l}"
         product_tokens = (
             '/product/',
             '/products/',
@@ -2663,7 +2735,14 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             '/collections/',
             '/collection/',
             '/dp/',
+            '/prn/',
+            '/prd/',
+            '/sku/',
+            '/item/',
+            '/p/',
             'variant=',
+            'add-to-cart=',
+            'price=',
         )
         if any(token in hay for token in product_tokens):
             return False
@@ -2680,7 +2759,21 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             '/benefits/',
             '/health/',
         )
-        return any(token in hay for token in blog_tokens)
+        if any(token in hay for token in blog_tokens):
+            return True
+        informational_tokens = (
+            'benefits',
+            'how to',
+            'guide',
+            'vs',
+            'difference',
+            'uses',
+            'tips',
+            'what is',
+            'best ',
+            'review',
+        )
+        return any(token in title_l for token in informational_tokens)
 
     def _decode_ddg_href(href: str) -> str:
         raw = str(href or '').strip()
@@ -2810,13 +2903,22 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             {'warning': crawl_warning, 'provider': str(crawl_result.get('provider') or 'unknown')},
         )
     crawl_items_raw = list(crawl_result.get('items') or [])
-    external_rows = [row for row in crawl_items_raw if _is_external(str(row.get('url') or ''))][:max_opencrawl_candidates]
+    external_rows = [
+        row
+        for row in crawl_items_raw
+        if _is_external(str(row.get('url') or ''))
+        and _is_blog_like_external_url(str(row.get('url') or ''), str(row.get('title') or ''))
+    ][:max_opencrawl_candidates]
     dedup_cluster = dedup_and_cluster_discovery(
         external_rows,
         max_urls_per_domain=2,
         max_items=max_opencrawl_candidates,
     )
-    crawl_items = list(dedup_cluster.get('items') or [])
+    crawl_items = [
+        row
+        for row in list(dedup_cluster.get('items') or [])
+        if _is_blog_like_external_url(str(row.get('url') or ''), str(row.get('title') or ''))
+    ]
     no_competitor_mode = False
     crawl_error_text = ''
     if not bool(crawl_result.get('ok')):
@@ -2852,6 +2954,33 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
                 'OpenCrawl returned no competitor URLs; continuing with internal/sitemap context',
                 {'from_cache': bool(crawl_result.get('from_cache'))},
             )
+    elif len(crawl_items) < max_competitor_pages:
+        fallback_items = await _discover_external_competitors_fallback(topic.primary_keyword, max_opencrawl_candidates)
+        if fallback_items:
+            seen_urls = {str(item.get('url') or '').rstrip('/') for item in crawl_items if str(item.get('url') or '').strip()}
+            added = 0
+            for item in fallback_items:
+                url = str(item.get('url') or '').strip()
+                if not url:
+                    continue
+                norm = url.rstrip('/')
+                if norm in seen_urls:
+                    continue
+                if not _is_blog_like_external_url(url, str(item.get('title') or '')):
+                    continue
+                seen_urls.add(norm)
+                crawl_items.append(item)
+                added += 1
+                if len(crawl_items) >= max_opencrawl_candidates:
+                    break
+            if added > 0:
+                log_pipeline_event(
+                    db,
+                    run.id,
+                    'info',
+                    'Fallback competitor discovery supplemented sparse primary results',
+                    {'added': added, 'total_after_merge': len(crawl_items)},
+                )
 
     db.execute(delete(CompetitorExtract).where(CompetitorExtract.pipeline_run_id == run.id))
     db.execute(delete(CompetitorPage).where(CompetitorPage.pipeline_run_id == run.id))
@@ -2868,6 +2997,8 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
         )
 
     for row in crawl_items[:max_competitor_pages]:
+        if not _is_blog_like_external_url(str(row.get('url') or ''), str(row.get('title') or '')):
+            continue
         preliminary = compute_competitive_strength(
             keyword=topic.primary_keyword,
             title=str(row.get('title') or ''),
@@ -3025,7 +3156,12 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             )
         db.commit()
 
-    topic_map = analyze_competitors(extracts_ok, keyword=topic.primary_keyword, max_pages=max_competitor_pages)
+    filtered_extracts = [
+        row
+        for row in extracts_ok
+        if _is_blog_like_external_url(str(row.get('url') or ''), str(row.get('title') or ''))
+    ]
+    topic_map = analyze_competitors(filtered_extracts, keyword=topic.primary_keyword, max_pages=max_competitor_pages)
     score_by_url = {
         str(item.get('url') or ''): float(item.get('competitive_strength_score') or 0.0)
         for item in (topic_map.get('page_scores') or [])
@@ -3040,11 +3176,11 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
     ai_competitor_domains = sorted(
         {
             (urlparse(str(row.get('url') or '')).netloc or '').lower().replace('www.', '')
-            for row in extracts_ok
+            for row in filtered_extracts
             if str(row.get('url') or '').startswith('http')
         }
     )
-    ai_competitor_urls = [str(row.get('url') or '') for row in extracts_ok if str(row.get('url') or '').startswith('http')]
+    ai_competitor_urls = [str(row.get('url') or '') for row in filtered_extracts if str(row.get('url') or '').startswith('http')]
 
     query_text = _build_retrieval_query(topic, ai_subtopics or [topic.primary_keyword])
     rag_top_k = int(runtime.get('rag_top_k') or 8)
@@ -3140,7 +3276,7 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
     domain_guard = classify_domain_context(
         topic.primary_keyword,
         ai_entities,
-        extracted_text=' '.join(str(row.get('plain_text') or '')[:2000] for row in extracts_ok[:3]),
+        extracted_text=' '.join(str(row.get('plain_text') or '')[:2000] for row in filtered_extracts[:3]),
     )
 
     competitor_domains = ai_competitor_domains[:10]
@@ -3150,7 +3286,7 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             'title': row.get('title') or f"Competitor result #{idx + 1}",
             'domain': (urlparse(str(row.get('url') or '')).netloc or '').lower().replace('www.', ''),
         }
-        for idx, row in enumerate(extracts_ok)
+        for idx, row in enumerate(filtered_extracts)
         if row.get('url')
     ]
     crawl_sources = [
@@ -3170,6 +3306,7 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
             'fetch_status': 'pending',
         }
         for item in crawl_items[:max_competitor_pages]
+        if _is_blog_like_external_url(str(item.get('url') or ''), str(item.get('title') or ''))
     ]
     meta = {
         'sources': sources,
@@ -3206,7 +3343,7 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
         },
         'title_candidates': [str(item.get('title') or '').strip() for item in crawl_items[:8] if str(item.get('title') or '').strip()],
         'topic_map': topic_map,
-        'topic_map_sources': extracts_ok,
+        'topic_map_sources': filtered_extracts,
         'domain_guard': domain_guard,
         'intent_clusters': {
             'present': dedup_cluster.get('present_clusters') or [],
@@ -3638,13 +3775,16 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         lowered_html = (html or '').lower()
 
     if '<h2>conclusion' not in lowered_html and '<h2>final recommendations' not in lowered_html:
+        conclusion_cta = _sanitize_placeholder_cta_text(
+            str(brief.get('cta_text') or f'Start implementing {topic.primary_keyword} with a repeatable plan.')
+        ).strip()
         html = _append_before_article_end(
             html,
             (
                 "<h2>Conclusion</h2>"
                 f"<p>{topic.primary_keyword} delivers stronger results when strategy, execution, and iteration stay aligned. "
                 "Use the checklists and section framework in this guide to improve quality, consistency, and ranking stability.</p>"
-                f"<p><strong>{brief.get('cta_text') or f'Start implementing {topic.primary_keyword} with a repeatable plan.'}</strong></p>"
+                f"<p><strong>{conclusion_cta}</strong></p>"
             ),
         )
 
@@ -3808,6 +3948,18 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         max_ratio=1.12,
     )
     html = _sanitize_generated_blog_html(html)
+    html = _ensure_internal_links_placement(
+        html,
+        internal_link_plan or candidates,
+        min_links=max(1, min_links) if (internal_link_plan or candidates) else 0,
+        max_links=max(1, max_links) if (internal_link_plan or candidates) else 1,
+        primary_keyword=topic.primary_keyword,
+    )
+    html = _dedupe_internal_link_urls(html, internal_link_plan or candidates)
+    html = _sanitize_generated_blog_html(html)
+    used_internal_links = _extract_used_internal_links(html, internal_link_plan or candidates)
+    if not used_internal_links:
+        used_internal_links = internal_link_plan[: min_links or requested_link_cap]
 
     resolved_meta_title = _clean_title_text(generation.get('meta_title') or title)
     if not resolved_meta_title or _is_generic_title(resolved_meta_title):

@@ -8,11 +8,13 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin
 from app.db.session import get_db
-from app.models.entities import BacklinkCampaign, BacklinkOpportunity, BacklinkTarget, Project
+from app.models.entities import BacklinkCampaign, BacklinkDiscovered, BacklinkOpportunity, BacklinkTarget, Project
 from app.schemas.entities import (
     BacklinkCampaignCreate,
     BacklinkCampaignDetailResponse,
     BacklinkCampaignResponse,
+    BacklinkDiscoveredBatchRequest,
+    BacklinkDiscoveredResponse,
     BacklinkOpportunityResponse,
     BacklinkOpportunityUpdate,
     BacklinkPlanRequest,
@@ -167,3 +169,65 @@ def update_opportunity(
     db.commit()
     db.refresh(row)
     return row
+
+
+@router.post('/discovered', response_model=list[BacklinkDiscoveredResponse])
+def upsert_discovered_backlinks(
+    payload: BacklinkDiscoveredBatchRequest,
+    db: Session = Depends(get_db),
+) -> list[BacklinkDiscovered]:
+    items = payload.items or []
+    if not items:
+        return []
+
+    now = datetime.utcnow()
+    normalized = []
+    for item in items:
+        source_url = (item.source_url or '').strip()
+        target_url = (item.target_url or '').strip()
+        if not source_url or not target_url:
+            continue
+        normalized.append({
+            'source_url': source_url,
+            'target_url': target_url,
+            'anchor_text': (item.anchor_text or '').strip() or None,
+            'rel_type': (item.rel_type or '').strip() or None,
+            'discovered_at': item.discovered_at or now,
+            'domain_authority_placeholder': float(item.domain_authority_placeholder or 0.0),
+        })
+
+    if not normalized:
+        return []
+
+    sources = {row['source_url'] for row in normalized}
+    targets = {row['target_url'] for row in normalized}
+    existing = db.execute(
+        select(BacklinkDiscovered.source_url, BacklinkDiscovered.target_url, BacklinkDiscovered.anchor_text)
+        .where(BacklinkDiscovered.source_url.in_(sources))
+        .where(BacklinkDiscovered.target_url.in_(targets))
+    ).all()
+    existing_keys = {
+        (str(row[0] or ''), str(row[1] or ''), str(row[2] or '')) for row in existing
+    }
+
+    created: list[BacklinkDiscovered] = []
+    for row in normalized:
+        key = (row['source_url'], row['target_url'], str(row.get('anchor_text') or ''))
+        if key in existing_keys:
+            continue
+        record = BacklinkDiscovered(
+            source_url=row['source_url'],
+            target_url=row['target_url'],
+            anchor_text=row.get('anchor_text'),
+            rel_type=row.get('rel_type'),
+            discovered_at=row.get('discovered_at') or now,
+            domain_authority_placeholder=row.get('domain_authority_placeholder') or 0.0,
+        )
+        db.add(record)
+        created.append(record)
+
+    if created:
+        db.commit()
+        for row in created:
+            db.refresh(row)
+    return created

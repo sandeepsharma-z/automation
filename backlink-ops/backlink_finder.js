@@ -128,11 +128,44 @@ const BLOCKED_DOMAINS = new Set([
   "support.google.com",
   "blog.youtube",
   "feedspot.com",
+  "xhamster.com",
+  "xvideos.com",
+  "pornhub.com",
+  "xnxx.com",
+  "redtube.com",
+  "youporn.com",
+  "bokeppx.com",
+  "bokeppx.tv",
+  "bokeppxtv.com",
 ]);
 
 const TRUSTED_TLDS = [".com", ".org", ".net", ".co.uk", ".in", ".co", ".io", ".edu", ".gov"];
 const LOW_QUALITY_TLDS = [".xyz", ".top", ".click", ".gq", ".tk", ".cf", ".ml", ".work", ".buzz"];
-const SPAM_TERMS = ["casino", "bet", "porn", "sex", "loan", "crypto", "viagra", "hack", "crack", "apk"];
+const SPAM_TERMS = [
+  "casino",
+  "bet",
+  "porn",
+  "sex",
+  "xxx",
+  "adult",
+  "escort",
+  "camgirl",
+  "cams",
+  "onlyfans",
+  "xhamster",
+  "xvideos",
+  "pornhub",
+  "xnxx",
+  "redtube",
+  "youporn",
+  "boke",
+  "loan",
+  "crypto",
+  "viagra",
+  "hack",
+  "crack",
+  "apk",
+];
 const LOW_INTENT_TERMS = [
   "meaning",
   "definition",
@@ -172,6 +205,44 @@ function tokenize(text = "") {
     .filter((v) => v.length >= 3);
 }
 
+const KEYWORD_STOP_TERMS = new Set([
+  "blog",
+  "blogs",
+  "post",
+  "posts",
+  "comment",
+  "comments",
+  "reply",
+  "leave",
+  "best",
+  "top",
+  "guide",
+  "review",
+  "oil",
+  "pure",
+  "method",
+  "methods",
+  "and",
+  "the",
+  "for",
+  "with",
+]);
+
+function keywordTokens(keyword = "") {
+  return tokenize(keyword).filter((t) => !KEYWORD_STOP_TERMS.has(t));
+}
+
+function keywordOverlapCount(candidate = {}, keyword = "") {
+  const terms = keywordTokens(keyword);
+  if (!terms.length) return 0;
+  const hay = `${String(candidate?.title || "").toLowerCase()} ${String(candidate?.url || "").toLowerCase()}`;
+  let count = 0;
+  for (const term of terms) {
+    if (hay.includes(term)) count += 1;
+  }
+  return count;
+}
+
 function asciiRatio(text = "") {
   const value = String(text || "");
   if (!value) return 1;
@@ -189,6 +260,7 @@ function isBlockedDomain(domain = "") {
   for (const blocked of BLOCKED_DOMAINS) {
     if (d.endsWith(`.${blocked}`)) return true;
   }
+  if (/\b(xhamster|xvideos|pornhub|xnxx|redtube|youporn|bokeppx|adult|xxx)\b/.test(d)) return true;
   return false;
 }
 
@@ -213,11 +285,12 @@ function qualityScore({ url = "", domain = "", title = "", keyword = "", query =
   if (/\b(best|top)\s+\d+\b/.test(lowerTitle) && /\b(blog|blogs|websites)\b/.test(lowerTitle)) return -145;
   if (/\b(list|directory|roundup)\b/.test(lowerTitle) && /\b(blog|blogs|sites|websites)\b/.test(lowerTitle)) return -130;
   if (/\bpowered by wordpress\b/.test(lowerTitle)) return -135;
+  let score = 30;
+  if (asciiRatio(`${title} ${url}`) < 0.65) score -= 20;
+  if (keywordOverlapCount({ url, title }, keyword) === 0) score -= 40;
   if (/\/(blog|blogs|news|insights)\/?$/.test(lowerUrl)) score -= 20;
   if (/\/(category|tag|archive|author)\//.test(lowerUrl)) return -130;
   if (/\b(top|best)\s*\d+\b/.test(lowerUrl) && /\bblog/.test(lowerUrl)) return -130;
-
-  let score = 30;
 
   for (const term of keywordTerms) {
     if (titleSet.has(term)) score += 8;
@@ -310,6 +383,7 @@ async function hasCommentFormSignals(context, url, cache) {
 function looksLikeCommentPage(candidate = {}) {
   const hay = `${String(candidate?.url || "").toLowerCase()} ${String(candidate?.title || "").toLowerCase()}`;
   if (/\b(crossword|solver|meaning|grammar|generator|checker)\b/.test(hay)) return false;
+  if (SPAM_TERMS.some((term) => hay.includes(term))) return false;
   return /(comment|comments|reply|leave a reply|post comment|respond|#comment|comment-form)/i.test(hay);
 }
 
@@ -780,6 +854,7 @@ async function run() {
 
               const domain = String(item?.domain || normalizeDomain(normalized));
               const title = String(item?.title || "").trim();
+              if (!includeAllSites && keywordOverlapCount({ url: normalized, title }, keyword) === 0) continue;
               const score = qualityScore({
                 url: normalized,
                 domain,
@@ -836,6 +911,7 @@ async function run() {
             const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
             if (!hasSignals && !hasRenderedSignals) continue;
           }
+          if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
@@ -874,6 +950,7 @@ async function run() {
             const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
             if (!hasSignals && !hasRenderedSignals) continue;
           }
+          if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
@@ -911,6 +988,7 @@ async function run() {
             const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
             if (!hasSignals && !hasRenderedSignals) continue;
           }
+          if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
@@ -945,6 +1023,12 @@ async function run() {
           const hostKey = String(candidate.domain || "");
           const currentDomainCount = Number(perDomainCount.get(hostKey) || 0);
           if (!includeAllSites && currentDomainCount >= 2) continue;
+          if (!includeAllSites && candidateIntent === "comment") {
+            const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
+            const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
+            if (!hasSignals && !hasRenderedSignals) continue;
+          }
+          if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);
@@ -974,12 +1058,20 @@ async function run() {
           if (!candidate?.url || !candidate?.domain) continue;
           const hay = `${String(candidate.url || "").toLowerCase()} ${String(candidate.title || "").toLowerCase()}`;
           if (SPAM_TERMS.some((term) => hay.includes(term))) continue;
+          if (LOW_INTENT_TERMS.some((term) => hay.includes(term))) continue;
           if (LOW_QUALITY_TLDS.some((tld) => String(candidate.domain || "").endsWith(tld))) continue;
           if (isBlockedDomain(String(candidate.domain || ""))) continue;
+          const candidateIntent = String(candidate.intent || detectIntent(candidate.query || ""));
+          if (!includeAllSites && candidateIntent === "comment") {
+            const hasSignals = await hasCommentFormSignals(context, candidate.url, signalCache);
+            const hasRenderedSignals = hasSignals ? true : await hasRenderedCommentSignals(context, verifyPage, candidate.url, signalCache);
+            if (!hasSignals && !hasRenderedSignals) continue;
+          }
 
           const hostKey = String(candidate.domain || "");
           const currentDomainCount = Number(perDomainCount.get(hostKey) || 0);
           if (!includeAllSites && currentDomainCount >= 2) continue;
+          if (!includeAllSites && keywordOverlapCount(candidate, keyword) === 0) continue;
 
           globalSeen.add(candidate.url);
           perDomainCount.set(hostKey, currentDomainCount + 1);

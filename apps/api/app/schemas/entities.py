@@ -413,3 +413,28 @@ class BacklinkCampaignDetailResponse(BaseModel):
     campaign: BacklinkCampaignResponse
     targets: list[BacklinkTargetResponse] = Field(default_factory=list)
     opportunities: list[BacklinkOpportunityResponse] = Field(default_factory=list)
+
+
+class BacklinkDiscoveredCreate(BaseModel):
+    source_url: str
+    target_url: str
+    anchor_text: str | None = None
+    rel_type: str | None = None
+    discovered_at: datetime | None = None
+    domain_authority_placeholder: float | None = 0.0
+
+
+class BacklinkDiscoveredBatchRequest(BaseModel):
+    items: list[BacklinkDiscoveredCreate] = Field(default_factory=list)
+
+
+class BacklinkDiscoveredResponse(BaseModel):
+    id: int
+    source_url: str
+    target_url: str
+    anchor_text: str | None = None
+    rel_type: str | None = None
+    discovered_at: datetime
+    domain_authority_placeholder: float | None = None
+
+    model_config = {'from_attributes': True}

@@ -389,3 +389,15 @@ class BacklinkOpportunity(Base):
 
     campaign: Mapped['BacklinkCampaign'] = relationship(back_populates='opportunities')
     target: Mapped['BacklinkTarget | None'] = relationship(back_populates='opportunities')
+
+
+class BacklinkDiscovered(Base):
+    __tablename__ = 'backlinks_discovered'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_url: Mapped[str] = mapped_column(String(1024), nullable=False, index=True)
+    target_url: Mapped[str] = mapped_column(String(1024), nullable=False, index=True)
+    anchor_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    rel_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    discovered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    domain_authority_placeholder: Mapped[float | None] = mapped_column(Float, default=0.0)

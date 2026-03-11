@@ -149,13 +149,27 @@ export function listLocalRows(projectRoot) {
   }));
 }
 
-function hasPendingTargetLinks(row) {
+function hasPendingTargetLinks(row, includeRetry = false) {
   const targetLinks = normalizeTargetLinks(row.target_links || row.target_link);
   if (!targetLinks.length) return true;
   const resultMap = new Map(normalizeResults(row.results).map((r) => [r.target_link, String(r.status || "").toLowerCase()]));
   return targetLinks.some((target) => {
     const status = resultMap.get(target) || "";
-    return !["success", "skipped", "blocked", "needs_manual_mapping"].includes(status);
+    const doneStatuses = new Set([
+      "success",
+      "skipped",
+      "blocked",
+      "needs_manual_mapping",
+      "submitted",
+      "pending_verification",
+      "access_required",
+      "manual_access_required",
+    ]);
+    if (!includeRetry) {
+      doneStatuses.add("failed");
+      doneStatuses.add("failed_duplicate");
+    }
+    return !doneStatuses.has(status);
   });
 }
 
@@ -169,11 +183,11 @@ export function getLocalQueue(projectRoot, { limit = 20, rowKey = "", includeRet
       ["", "queued", "running", "submitted", "pending_verification", "access_required", "manual_access_required", "failed", "skipped", "needs_manual_mapping", "blocked"].includes(
         String(r.status || "").toLowerCase().trim()
       )
-    ).filter(hasPendingTargetLinks);
+    ).filter((row) => hasPendingTargetLinks(row, true));
   } else {
     filtered = rows
       .filter((r) => ["", "queued", "running", "submitted", "pending_verification", "access_required", "manual_access_required"].includes(String(r.status || "").toLowerCase().trim()))
-      .filter(hasPendingTargetLinks);
+      .filter((row) => hasPendingTargetLinks(row, false));
   }
   return filtered.slice(0, Number(limit || 20));
 }

@@ -7,6 +7,7 @@
   "scripts": {
     "run": "node src/runner.js",
     "run:once": "node src/runner.js --limit=1",
+    "backlinks:scan": "node backlink_scan.js",
     "ui:dev": "npm --prefix ui run dev",
     "ui:build": "npm --prefix ui run build",
     "ui:start": "npm --prefix ui run start"

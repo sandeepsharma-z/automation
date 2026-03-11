@@ -1817,10 +1817,8 @@ async function fillBlogCommentFields(page, row, detectedForm, targetLink, humanS
         if (humanSimulator && HUMAN_BEHAVIOR_ENABLED) {
           await humanSimulator.humanLikeTyping(locator, value);
         } else {
-          const filled = await locator.fill(value, { timeout: 5000 }).then(() => true).catch(() => false);
-          if (!filled) {
-            await locator.type(value, { delay: 35 }).catch(() => {});
-          }
+          await locator.fill("").catch(() => {});
+          await locator.type(value, { delay: 40 + Math.floor(Math.random() * 40) }).catch(() => {});
         }
         
         let actual = await readLocatorValue(locator);
@@ -1948,14 +1946,29 @@ async function fillBlogCommentFields(page, row, detectedForm, targetLink, humanS
     "input[type='checkbox'][id*='cookie' i]",
     "input[type='checkbox'][name*='remember' i]",
     "input[type='checkbox'][id*='remember' i]",
+    "input[type='checkbox'][name*='consent' i]",
+    "input[type='checkbox'][id*='consent' i]",
   ];
-  const rememberLabel = page.locator("label:has-text('Save my name')").first();
+  const rememberLabel = page.locator("label:has-text('Save my name'), label:has-text('Save my') , label:has-text('Remember me'), label:has-text('consent')").first();
   for (const selector of rememberSelectors) {
     const checkbox = page.locator(selector).first();
     const visible = await checkbox.isVisible().catch(() => false);
     if (!visible) continue;
     await ensureCheckboxChecked(checkbox, rememberLabel);
     break;
+  }
+
+  if (await rememberLabel.isVisible().catch(() => false)) {
+    const labelTarget = rememberLabel;
+    const checkboxId = await labelTarget.getAttribute("for").catch(() => "");
+    if (checkboxId) {
+      const linked = page.locator(`#${checkboxId}`).first();
+      if (await linked.isVisible().catch(() => false)) {
+        await ensureCheckboxChecked(linked, rememberLabel);
+      }
+    } else {
+      await labelTarget.click({ timeout: 1500 }).catch(() => {});
+    }
   }
 }
 

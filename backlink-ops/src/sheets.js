@@ -176,13 +176,27 @@ export async function readRows() {
   return { header, rows };
 }
 
-function hasPendingTargets(row) {
+function hasPendingTargets(row, includeRetry = false) {
   const targets = normalizeTargetLinks(row.target_links || row.target_link);
   if (!targets.length) return true;
   const resultMap = new Map(parseResults(row.results).map((r) => [String(r?.target_link || ""), String(r?.status || "").toLowerCase()]));
   return targets.some((target) => {
     const status = resultMap.get(target) || "";
-    return !["success", "skipped", "blocked", "needs_manual_mapping"].includes(status);
+    const doneStatuses = new Set([
+      "success",
+      "skipped",
+      "blocked",
+      "needs_manual_mapping",
+      "submitted",
+      "pending_verification",
+      "access_required",
+      "manual_access_required",
+    ]);
+    if (!includeRetry) {
+      doneStatuses.add("failed");
+      doneStatuses.add("failed_duplicate");
+    }
+    return !doneStatuses.has(status);
   });
 }
 
@@ -200,11 +214,11 @@ export async function getQueue({ limit = 20, rowKey = "", includeRetry = false }
           String(r.status || "").trim().toLowerCase()
         )
       )
-      .filter(hasPendingTargets);
+      .filter((row) => hasPendingTargets(row, true));
   } else {
     filtered = rows
       .filter((r) => ["", "queued", "running", "submitted", "pending_verification", "access_required", "manual_access_required"].includes(String(r.status || "").trim().toLowerCase()))
-      .filter(hasPendingTargets);
+      .filter((row) => hasPendingTargets(row, false));
   }
   return filtered.slice(0, Number(limit || 20));
 }
