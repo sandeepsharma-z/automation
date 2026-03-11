@@ -578,9 +578,15 @@ function findTargetForSite(siteUrl) {
 
 function validateSelectorsForWorkflow(target, workflow) {
   const isBlogCommenting = String(workflow?.type || "").toLowerCase() === "blog_commenting";
+  const autoDetectSelectors = Boolean(workflow?.auto_detect_selectors);
   if (isBlogCommenting) {
     // Blog commenting flow uses runtime auto-detection on page.
     // Do not block queue rows on missing pre-mapped selectors.
+    return [];
+  }
+  if (autoDetectSelectors) {
+    // Some workflows can discover common fields/buttons at runtime.
+    // Keep queue rows runnable instead of blocking intake on empty selector maps.
     return [];
   }
   const required = [...new Set([

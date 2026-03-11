@@ -1,6 +1,7 @@
 import { profileListingWorkflow } from "./profile_listing.js";
 import { businessDirectoryWorkflow } from "./business_directory.js";
 import { resourceSubmissionWorkflow } from "./resource_submission.js";
+import { imageSubmissionWorkflow } from "./image_submission.js";
 import { outreachEmailWorkflow } from "./outreach_email.js";
 import { citationUpdateWorkflow } from "./citation_update.js";
 import { blogCommentingWorkflow } from "./blog_commenting.js";
@@ -10,6 +11,7 @@ const WORKFLOWS = {
   [profileListingWorkflow.type]: profileListingWorkflow,
   [businessDirectoryWorkflow.type]: businessDirectoryWorkflow,
   [resourceSubmissionWorkflow.type]: resourceSubmissionWorkflow,
+  [imageSubmissionWorkflow.type]: imageSubmissionWorkflow,
   [outreachEmailWorkflow.type]: outreachEmailWorkflow,
   [citationUpdateWorkflow.type]: citationUpdateWorkflow,
   [blogCommentingWorkflow.type]: blogCommentingWorkflow,
