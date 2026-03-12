@@ -166,9 +166,11 @@ export default function BlogGenPage() {
     let s = 0;
     setStep(0);
     stepTimer.current = setInterval(() => {
-      s = Math.min(s + 1, STEPS.length - 1);
+      s += 1;
+      // cycle back to step 2 (research loop) if we exceed steps, so spinner keeps going
+      if (s >= STEPS.length) s = 2;
       setStep(s);
-    }, 22000);
+    }, 30000);
   }
   function stopStepTimer() { if (stepTimer.current) clearInterval(stepTimer.current); }
 
@@ -216,6 +218,7 @@ export default function BlogGenPage() {
       const data = await apiFetch('/api/blog-agent/generate?async_job=false', {
         method: 'POST',
         body: JSON.stringify(payload),
+        timeoutMs: 360000, // 6 minutes — blog gen can take 120–180s
       });
 
       setStep(STEPS.length - 1);
