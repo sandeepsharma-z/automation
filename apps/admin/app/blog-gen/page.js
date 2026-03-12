@@ -141,7 +141,7 @@ const DEFAULT_FORM = {
   nlp_terms: [],
   note: '',
   word_count: 1500,
-  tone: 'professional',
+  tone: 'auto',
   country: 'in',
   gen_image: false,
   image_prompt: '',
@@ -214,7 +214,7 @@ export default function BlogGenPage() {
         primary_keyword: primaryKw,
         secondary_keywords: secondaryKws,
         topic: topicText,
-        tone: form.tone,
+        tone: 'auto',
         country: form.country,
         language: 'en',
         desired_word_count: Number(form.word_count),
@@ -338,30 +338,17 @@ export default function BlogGenPage() {
 
             <div className="bg-section-label" style={{ marginTop: 20 }}>⚙️ Settings</div>
 
-            <div className="form-row">
-              <label>
-                Project
-                <select value={form.project_id} onChange={(e) => set('project_id', e.target.value)}>
-                  {projects.length === 0 && <option value="1">Default (Project 1)</option>}
-                  {projects.map((p) => (
-                    <option key={p.id} value={String(p.id)}>
-                      {p.name || `Project ${p.id}`}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Tone
-                <select value={form.tone} onChange={(e) => set('tone', e.target.value)}>
-                  <option value="auto">Auto (AI decides)</option>
-                  <option value="professional">Professional</option>
-                  <option value="conversational">Conversational</option>
-                  <option value="casual">Casual</option>
-                  <option value="technical">Technical</option>
-                  <option value="authoritative">Authoritative</option>
-                </select>
-              </label>
-            </div>
+            <label>
+              Project
+              <select value={form.project_id} onChange={(e) => set('project_id', e.target.value)}>
+                {projects.length === 0 && <option value="1">Default (Project 1)</option>}
+                {projects.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name || `Project ${p.id}`}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <div className="form-row">
               <label>
