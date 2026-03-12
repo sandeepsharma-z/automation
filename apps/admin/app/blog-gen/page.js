@@ -134,7 +134,7 @@ function CopyBtn({ text, label = 'Copy' }) {
 
 /* ─── Main Page ──────────────────────────────────────────────────────── */
 const DEFAULT_FORM = {
-  project_id: '',
+  website_url: '',
   topic: '',
   primary_keyword: '',
   secondary_keywords: [],
@@ -150,7 +150,6 @@ const DEFAULT_FORM = {
 
 export default function BlogGenPage() {
   const [form, setForm]         = useState(DEFAULT_FORM);
-  const [projects, setProjects] = useState([]);
   const [loading, setLoading]   = useState(false);
   const [step, setStep]         = useState(0);
   const [draft, setDraft]       = useState(null);
@@ -160,18 +159,6 @@ export default function BlogGenPage() {
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError] = useState('');
   const stepTimer               = useRef(null);
-
-  /* load projects */
-  useEffect(() => {
-    apiFetch('/api/projects')
-      .then((data) => {
-        if (Array.isArray(data) && data.length) {
-          setProjects(data);
-          setForm((f) => ({ ...f, project_id: String(data[0].id) }));
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
 
@@ -209,8 +196,9 @@ export default function BlogGenPage() {
       if (form.note.trim()) topicText += `\n\nExtra instructions: ${form.note.trim()}`;
 
       const payload = {
-        project_id: Number(form.project_id) || 1,
+        project_id: 1,
         platform: 'none',
+        website_url: form.website_url.trim() || undefined,
         primary_keyword: primaryKw,
         secondary_keywords: secondaryKws,
         topic: topicText,
@@ -338,17 +326,16 @@ export default function BlogGenPage() {
 
             <div className="bg-section-label" style={{ marginTop: 20 }}>⚙️ Settings</div>
 
-            <label>
-              Project
-              <select value={form.project_id} onChange={(e) => set('project_id', e.target.value)}>
-                {projects.length === 0 && <option value="1">Default (Project 1)</option>}
-                {projects.map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.name || `Project ${p.id}`}
-                  </option>
-                ))}
-              </select>
+            <label className="bg-label">
+              Website URL
+              <span className="bg-hint"> — aapki website ka link (optional)</span>
             </label>
+            <input
+              type="url"
+              placeholder="e.g. https://houseofdasdi.com"
+              value={form.website_url}
+              onChange={(e) => set('website_url', e.target.value)}
+            />
 
             <div className="form-row">
               <label>
