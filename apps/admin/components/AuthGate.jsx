@@ -9,6 +9,7 @@ const PRIMARY_NAV_ITEMS = [
   { href: '/projects', label: 'Projects' },
   { href: '/drafts', label: 'Drafts' },
   { href: '/blog-agent', label: 'Blog Agent' },
+  { href: '/blog-gen', label: '✍️ Blog Generator' },
   { href: '/seo-reports', label: 'SEO Reports' },
   { href: '/settings', label: 'Settings' },
 ];
@@ -74,12 +75,6 @@ export default function AuthGate({ children }) {
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
-        <div className="sidebar-brand">
-          <p>ContentOps AI</p>
-          <h2>Control Center</h2>
-          <span>Research to publish operations</span>
-        </div>
-
         <nav className="sidebar-nav">
           {PRIMARY_NAV_ITEMS.map((item) => (
             <Link

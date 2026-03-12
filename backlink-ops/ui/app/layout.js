@@ -15,6 +15,7 @@ const NAV = [
   { href: "/backlinks/table",        label: "Status Table",      icon: "📊" },
   { href: "/backlinks/bulk-runs",    label: "Bulk Runs",         icon: "⚡" },
   { href: "/backlinks/success-vault",label: "Success Vault",     icon: "✅" },
+  { href: "/backlinks/blog-gen",     label: "Blog Generator",    icon: "✍️" },
 ];
 
 export default function RootLayout({ children }) {
