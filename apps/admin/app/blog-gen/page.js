@@ -352,40 +352,36 @@ export default function BlogGenPage() {
               placeholder="e.g. payroll software|https://yoursite.com/payroll-software/"
             />
 
-            {form.internal_link_anchors.length > 0 && (
-              <>
-                <label className="bg-label">
-                  Link Placement Suggestion
-                  <span className="bg-hint"> — kis section mein links place hone chahiye</span>
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '10px 14px', background: 'rgba(219,234,254,.2)', borderRadius: 12, border: '1px solid rgba(124,169,243,.28)' }}>
-                  {LINK_PLACEMENT_OPTIONS.map((opt) => {
-                    const checked = form.link_placements.includes(opt);
-                    return (
-                      <label
-                        key={opt}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '5px 12px', borderRadius: 20, fontSize: 13, fontWeight: 500, background: checked ? '#dbeafe' : 'rgba(255,255,255,.85)', color: checked ? '#1e40af' : '#4b6290', border: checked ? '1px solid rgba(96,165,250,.6)' : '1px solid rgba(124,169,243,.3)', transition: 'all .15s', userSelect: 'none' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          style={{ display: 'none' }}
-                          onChange={() => {
-                            const cur = form.link_placements;
-                            set('link_placements', checked ? cur.filter((x) => x !== opt) : [...cur, opt]);
-                          }}
-                        />
-                        {checked ? '✅' : '○'} {opt}
-                      </label>
-                    );
-                  })}
-                </div>
-                {form.link_placements.length > 0 && (
-                  <p style={{ fontSize: 12, color: '#607eaf', margin: '4px 0 0' }}>
-                    ✓ Links will be placed in: <strong style={{ color: '#274774' }}>{form.link_placements.join(' · ')}</strong>
-                  </p>
-                )}
-              </>
+            <label className="bg-label">
+              Link Placement Suggestion
+              <span className="bg-hint"> — kis section mein links place hone chahiye</span>
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '10px 14px', background: 'rgba(219,234,254,.2)', borderRadius: 12, border: '1px solid rgba(124,169,243,.28)' }}>
+              {LINK_PLACEMENT_OPTIONS.map((opt) => {
+                const checked = form.link_placements.includes(opt);
+                return (
+                  <label
+                    key={opt}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '5px 12px', borderRadius: 20, fontSize: 13, fontWeight: 500, background: checked ? '#dbeafe' : 'rgba(255,255,255,.85)', color: checked ? '#1e40af' : '#4b6290', border: checked ? '1px solid rgba(96,165,250,.6)' : '1px solid rgba(124,169,243,.3)', transition: 'all .15s', userSelect: 'none' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      style={{ display: 'none' }}
+                      onChange={() => {
+                        const cur = form.link_placements;
+                        set('link_placements', checked ? cur.filter((x) => x !== opt) : [...cur, opt]);
+                      }}
+                    />
+                    {checked ? '✅' : '○'} {opt}
+                  </label>
+                );
+              })}
+            </div>
+            {form.link_placements.length > 0 && (
+              <p style={{ fontSize: 12, color: '#607eaf', margin: '4px 0 0' }}>
+                ✓ Links will be placed in: <strong style={{ color: '#274774' }}>{form.link_placements.join(' · ')}</strong>
+              </p>
             )}
 
             <label className="bg-label">
