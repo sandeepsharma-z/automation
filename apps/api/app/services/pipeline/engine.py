@@ -3186,81 +3186,110 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
     rag_top_k = int(runtime.get('rag_top_k') or 8)
     internal_links_max = max(1, int(runtime.get('internal_links_max') or 8))
     openai_key = runtime.get('openai_api_key')
-    internal_candidates = retrieve_internal_link_candidates(
-        project_id=project.id,
-        query_text=query_text,
-        top_k=max(3, rag_top_k),
-        openai_api_key=openai_key,
-        rag_enabled=bool(runtime.get('rag_enabled', True)),
-    )
-    fallback_links = pick_internal_links(
-        [
-            row
-            for row in augmented_library
-            if _is_page_like_internal_url(str(row.get('url') or ''), str(row.get('type') or ''))
-        ],
-        topic.primary_keyword,
-        max_links=max(30, internal_links_max * 3),
-    )
-    if not internal_candidates:
-        internal_candidates = [
-            {
+
+    # When caller provides explicit internal_link_anchors, build candidates from them directly
+    # and skip fetching from the project library (which belongs to a different site).
+    _custom_anchors: list[str] = list(payload.get('internal_link_anchors') or [])
+    _custom_site: str = str(payload.get('website_url') or '').strip().rstrip('/')
+    if _custom_anchors and _custom_site:
+        # Use caller-provided anchors — skip project library entirely
+        internal_candidates = []
+        for idx, raw in enumerate(_custom_anchors):
+            raw = str(raw).strip()
+            if not raw:
+                continue
+            if '|' in raw:
+                parts = raw.split('|', 1)
+                anchor_text = parts[0].strip()
+                link_url = parts[1].strip()
+            else:
+                anchor_text = raw
+                slug = re.sub(r'[^a-z0-9]+', '-', raw.lower()).strip('-')
+                link_url = f"{_custom_site}/{slug}/"
+            internal_candidates.append({
                 'item_id': idx + 1,
-                'title': row.get('anchor', ''),
-                'url': row.get('url', ''),
-                'type': 'library',
+                'title': anchor_text,
+                'url': link_url,
+                'type': 'custom',
                 'tags': [],
-                'score': 999.0,
-            }
-            for idx, row in enumerate(fallback_links)
-        ]
+                'score': 1000.0 - idx,
+            })
+        internal_link_plan = internal_candidates[:internal_links_max]
     else:
-        internal_candidates = [
-            row
-            for row in internal_candidates
-            if _is_page_like_internal_url(str(row.get('url') or ''), str(row.get('type') or ''))
-        ]
-        existing_urls = {str(row.get('url') or '').rstrip('/') for row in internal_candidates if row.get('url')}
-        # Expand candidate pool to all relevant internal pages, not just blog URLs.
-        for row in augmented_library:
-            raw_url = str(row.get('url') or '').strip()
-            normalized = raw_url.rstrip('/')
-            if not normalized or normalized in existing_urls:
-                continue
-            if not _is_page_like_internal_url(raw_url, str(row.get('type') or '')):
-                continue
-            existing_urls.add(normalized)
-            internal_candidates.append(
+        internal_candidates = retrieve_internal_link_candidates(
+            project_id=project.id,
+            query_text=query_text,
+            top_k=max(3, rag_top_k),
+            openai_api_key=openai_key,
+            rag_enabled=bool(runtime.get('rag_enabled', True)),
+        )
+        fallback_links = pick_internal_links(
+            [
+                row
+                for row in augmented_library
+                if _is_page_like_internal_url(str(row.get('url') or ''), str(row.get('type') or ''))
+            ],
+            topic.primary_keyword,
+            max_links=max(30, internal_links_max * 3),
+        )
+        if not internal_candidates:
+            internal_candidates = [
                 {
-                    'item_id': len(internal_candidates) + 1,
-                    'title': str(row.get('title') or raw_url),
-                    'url': raw_url,
-                    'type': str(row.get('type') or 'library'),
-                    'tags': list(row.get('tags_json') or []),
-                    'score': 970.0 + len(existing_urls),
-                }
-            )
-        for row in fallback_links:
-            normalized = str(row.get('url') or '').rstrip('/')
-            if not normalized or normalized in existing_urls:
-                continue
-            existing_urls.add(normalized)
-            internal_candidates.append(
-                {
-                    'item_id': len(internal_candidates) + 1,
+                    'item_id': idx + 1,
                     'title': row.get('anchor', ''),
                     'url': row.get('url', ''),
                     'type': 'library',
                     'tags': [],
-                    'score': 950.0 + len(existing_urls),
+                    'score': 999.0,
                 }
-            )
+                for idx, row in enumerate(fallback_links)
+            ]
+        else:
+            internal_candidates = [
+                row
+                for row in internal_candidates
+                if _is_page_like_internal_url(str(row.get('url') or ''), str(row.get('type') or ''))
+            ]
+            existing_urls = {str(row.get('url') or '').rstrip('/') for row in internal_candidates if row.get('url')}
+            for row in augmented_library:
+                raw_url = str(row.get('url') or '').strip()
+                normalized = raw_url.rstrip('/')
+                if not normalized or normalized in existing_urls:
+                    continue
+                if not _is_page_like_internal_url(raw_url, str(row.get('type') or '')):
+                    continue
+                existing_urls.add(normalized)
+                internal_candidates.append(
+                    {
+                        'item_id': len(internal_candidates) + 1,
+                        'title': str(row.get('title') or raw_url),
+                        'url': raw_url,
+                        'type': str(row.get('type') or 'library'),
+                        'tags': list(row.get('tags_json') or []),
+                        'score': 970.0 + len(existing_urls),
+                    }
+                )
+            for row in fallback_links:
+                normalized = str(row.get('url') or '').rstrip('/')
+                if not normalized or normalized in existing_urls:
+                    continue
+                existing_urls.add(normalized)
+                internal_candidates.append(
+                    {
+                        'item_id': len(internal_candidates) + 1,
+                        'title': row.get('anchor', ''),
+                        'url': row.get('url', ''),
+                        'type': 'library',
+                        'tags': [],
+                        'score': 950.0 + len(existing_urls),
+                    }
+                )
 
-    internal_link_plan = build_internal_link_plan(
-        internal_candidates,
-        topic.primary_keyword,
-        max_links=max(1, internal_links_max),
-    )
+        internal_link_plan = build_internal_link_plan(
+            internal_candidates,
+            topic.primary_keyword,
+            max_links=max(1, internal_links_max),
+        )
     log_pipeline_event(
         db,
         run.id,
@@ -3811,7 +3840,7 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
     ]
     html = _sanitize_external_brand_mentions(
         html,
-        project_base_url=project.base_url,
+        project_base_url=str(payload.get('website_url') or project.base_url or ''),
         candidate_urls=external_candidate_urls,
     )
     html = _remove_banned_phrase_paragraphs(html)

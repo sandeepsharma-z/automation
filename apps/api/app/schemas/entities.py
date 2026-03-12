@@ -263,6 +263,9 @@ class BlogAgentGenerateRequest(BaseModel):
     publish_status: str = 'draft'
     schedule_datetime: datetime | None = None
     force_new: bool = False
+    # Blog Generator overrides (optional)
+    website_url: str | None = None          # overrides project.base_url for link sanitisation
+    internal_link_anchors: list[str] = Field(default_factory=list)  # "Anchor Text|https://url" pairs
 
 
 class BlogAgentOutlineRequest(BlogAgentGenerateRequest):

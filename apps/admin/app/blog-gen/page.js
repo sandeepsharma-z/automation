@@ -139,6 +139,7 @@ const DEFAULT_FORM = {
   primary_keyword: '',
   secondary_keywords: [],
   nlp_terms: [],
+  internal_link_anchors: [],
   note: '',
   word_count: 1500,
   tone: 'auto',
@@ -197,10 +198,12 @@ export default function BlogGenPage() {
       let topicText = form.topic.trim() || primaryKw;
       if (form.note.trim()) topicText += `\n\nExtra instructions: ${form.note.trim()}`;
 
+      const siteUrl = form.website_url.trim().replace(/\/+$/, '');
       const payload = {
         project_id: 1,
         platform: 'none',
-        website_url: form.website_url.trim() || undefined,
+        website_url: siteUrl || undefined,
+        internal_link_anchors: form.internal_link_anchors.length ? form.internal_link_anchors : undefined,
         primary_keyword: primaryKw,
         secondary_keywords: secondaryKws,
         topic: topicText,
@@ -322,6 +325,16 @@ export default function BlogGenPage() {
               value={form.nlp_terms}
               onChange={(v) => set('nlp_terms', v)}
               placeholder="e.g. accounts payable, balance sheet, tally alternative…"
+            />
+
+            <label className="bg-label">
+              Internal Link Anchors
+              <span className="bg-hint"> — "Anchor Text|https://url.com" ya sirf anchor text (URL auto-generate hoga)</span>
+            </label>
+            <TagInput
+              value={form.internal_link_anchors}
+              onChange={(v) => set('internal_link_anchors', v)}
+              placeholder="e.g. payroll software|https://yoursite.com/payroll-software/"
             />
 
             <label className="bg-label">
