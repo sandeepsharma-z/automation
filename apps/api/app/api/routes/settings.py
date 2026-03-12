@@ -11,6 +11,7 @@ from app.services.connectors.base import ConnectorError
 from app.services.connectors.factory import build_connector
 from app.services.competitive.open_crawl_service import fetch_open_crawl_live
 from app.services.providers.openai_provider import OpenAIProvider
+from app.services.providers.claude_provider import ClaudeProvider
 from app.services.settings import (
     SECRET_KEYS,
     SETTING_SPECS,
@@ -69,6 +70,7 @@ def get_settings_list(db: Session = Depends(get_db)) -> dict[str, Any]:
         'provider_health': {
             'openai': get_provider_health(db, 'openai'),
             'opencrawl': get_provider_health(db, 'opencrawl'),
+            'claude': get_provider_health(db, 'claude'),
         },
     }
 
@@ -109,6 +111,25 @@ async def test_openai_settings(db: Session = Depends(get_db)) -> dict[str, Any]:
         normalized = _normalize_openai_error_message(exc)
         update_provider_health(db, 'openai', False, normalized)
         return {'ok': False, 'error': normalized, 'model': model}
+
+
+@router.post('/test/claude')
+async def test_claude_settings(db: Session = Depends(get_db)) -> dict[str, Any]:
+    api_key = get_setting_value(db, 'anthropic_api_key', decrypt_secrets=True, include_env_fallback=True)
+    model = get_setting_value(db, 'anthropic_model', include_env_fallback=True) or 'claude-sonnet-4-6'
+    if not api_key:
+        update_provider_health(db, 'claude', False, 'Missing Anthropic API key')
+        return {'ok': False, 'error': 'Anthropic API key is not configured'}
+
+    provider = ClaudeProvider(api_key=api_key, model=model)
+    try:
+        result = await provider.generate_text('Reply with exactly: OK')
+        update_provider_health(db, 'claude', True, f'Connected to model {model}')
+        return {'ok': True, 'model': model, 'reply': result.text[:60]}
+    except Exception as exc:
+        msg = str(exc or '').strip() or 'Claude test failed'
+        update_provider_health(db, 'claude', False, msg)
+        return {'ok': False, 'error': msg, 'model': model}
 
 
 @router.post('/test/opencrawl')

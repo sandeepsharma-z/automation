@@ -12,12 +12,15 @@ from app.core.config import get_settings
 from app.core.security import decrypt_secret, encrypt_secret
 from app.models.entities import Project, Setting
 
-SECRET_KEYS = {'openai_api_key', 'opencrawl_api_key'}
-INTERNAL_KEYS = {'provider_health_openai', 'provider_health_opencrawl'}
+SECRET_KEYS = {'openai_api_key', 'opencrawl_api_key', 'anthropic_api_key'}
+INTERNAL_KEYS = {'provider_health_openai', 'provider_health_opencrawl', 'provider_health_claude'}
 
 SETTING_SPECS: dict[str, dict[str, Any]] = {
     'openai_api_key': {'type': 'str', 'secret': True},
     'openai_model': {'type': 'str'},
+    'anthropic_api_key': {'type': 'str', 'secret': True},
+    'anthropic_model': {'type': 'str'},
+    'ai_provider': {'type': 'str', 'choices': {'openai', 'claude'}},
     'image_model': {'type': 'str'},
     'opencrawl_api_url': {'type': 'str'},
     'opencrawl_api_key': {'type': 'str', 'secret': True},
@@ -184,6 +187,13 @@ def get_setting_value(
     return default
 
 
+def _looks_like_anthropic_key(value: Any) -> bool:
+    text = str(value or '').strip()
+    if not text or _is_masked_secret_candidate(text):
+        return False
+    return text.startswith('sk-ant-')
+
+
 def _upsert_raw(db: Session, key: str, value_encrypted: str | None, value_masked: str | None) -> Setting:
     row = _setting_row(db, key)
     if not row:
@@ -211,6 +221,11 @@ def upsert_setting(db: Session, key: str, value: Any) -> Setting:
                 raise ValueError('Please paste full OpenAI API key, not masked value.')
             if not _looks_like_openai_key(secret):
                 raise ValueError('Invalid OpenAI API key format. Expected key starting with sk-.')
+        if key == 'anthropic_api_key':
+            if _is_masked_secret_candidate(secret):
+                raise ValueError('Please paste full Anthropic API key, not masked value.')
+            if not _looks_like_anthropic_key(secret):
+                raise ValueError('Invalid Anthropic API key format. Expected key starting with sk-ant-.')
         return _upsert_raw(db, key, encrypt_secret(secret), mask_secret(secret))
 
     serialized = _serialize_non_secret(normalized)
@@ -261,6 +276,9 @@ def resolve_project_runtime_config(db: Session, project: Project) -> dict[str, A
     resolved = {
         'openai_api_key': resolve_project_setting(db, project, 'openai_api_key'),
         'openai_model': resolve_project_setting(db, project, 'openai_model'),
+        'anthropic_api_key': resolve_project_setting(db, project, 'anthropic_api_key'),
+        'anthropic_model': resolve_project_setting(db, project, 'anthropic_model'),
+        'ai_provider': str(resolve_project_setting(db, project, 'ai_provider') or 'openai'),
         'image_model': resolve_project_setting(db, project, 'image_model'),
         'opencrawl_api_url': resolve_project_setting(db, project, 'opencrawl_api_url')
         or get_settings().opencrawl_api_url,

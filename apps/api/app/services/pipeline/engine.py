@@ -51,6 +51,7 @@ from app.services.pipeline.variation import (
     mark_pattern_used,
 )
 from app.services.providers.openai_provider import OpenAIProvider
+from app.services.providers.claude_provider import ClaudeProvider
 from app.services.rag.vectorstore import (
     build_internal_link_plan,
     ingest_library_items,
@@ -1669,21 +1670,67 @@ def _sanitize_external_brand_mentions(
 
     for anchor in root.find_all('a'):
         href = str(anchor.get('href') or '').strip()
+        if not href:
+            continue
         host = (urlparse(href).netloc or '').lower().replace('www.', '')
         if host and allowed_host and host != allowed_host:
-            anchor.string = 'official product page'
-
-    if blocked_tokens:
-        pattern = re.compile(r'(?i)\b(' + '|'.join(re.escape(token) for token in sorted(blocked_tokens, key=len, reverse=True)) + r')\b')
-        for node in root.find_all(string=True):
-            parent = getattr(node, 'parent', None)
-            if parent is None or getattr(parent, 'name', '') in {'script', 'style', 'code', 'pre', 'a'}:
-                continue
-            raw_text = str(node)
-            replaced = pattern.sub('official product page', raw_text)
-            if replaced != raw_text:
-                node.replace_with(replaced)
+            # Only replace anchor text if it looks like a raw URL or image filename, not real content
+            current_text = anchor.get_text(' ', strip=True)
+            if not current_text or current_text.startswith('http') or '.' in current_text.split('/')[-1]:
+                anchor.string = 'official product page'
     return str(soup)
+
+
+_STATIC_ASSET_EXTS = (
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff', '.avif',
+    '.mp4', '.mp3', '.pdf', '.zip', '.js', '.css', '.woff', '.woff2', '.ttf',
+)
+
+
+def _remove_static_asset_links(html: str) -> str:
+    """Remove <a> tags linking to static/image files and strip placeholder <img> tags.
+    Also cleans up dangling 'Learn more: filename.png' style sentence fragments."""
+    if not html or not html.strip():
+        return html
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, 'html.parser')
+        # Remove <a> tags linking to static/image files — remove entire anchor including text
+        for anchor in list(soup.find_all('a')):
+            href = str(anchor.get('href') or '').strip().lower()
+            if any(href.endswith(ext) for ext in _STATIC_ASSET_EXTS):
+                anchor.decompose()
+        # Remove <img> tags that don't have a real http src (placeholders)
+        for img in list(soup.find_all('img')):
+            src = str(img.get('src') or '').strip()
+            if not src.startswith('http'):
+                img.decompose()
+        html_out = str(soup)
+    except Exception:
+        html_out = html
+
+    # Clean up dangling "Learn more: .", "Related guide: ." style sentence fragments
+    # These appear when the link anchor was removed but the preceding text remains
+    _dangling_prefixes = (
+        r'Learn more\s*:\s*\.?',
+        r'Related guide\s*:\s*\.?',
+        r'Reference\s*:\s*\.?',
+        r'Read more\s*:\s*\.?',
+        r'Explore\s*:\s*\.?',
+        r'See also\s*:\s*\.?',
+        r'Source\s*:\s*\.?',
+    )
+    for pat in _dangling_prefixes:
+        html_out = re.sub(pat, '', html_out, flags=re.IGNORECASE)
+
+    # Remove any remaining bare image filenames (e.g. featured_0_123.png or inline_1_456.webp)
+    html_out = re.sub(
+        r'\b(featured|inline|hero|banner|thumb|image|img)[\w_-]*\d+\.(png|jpg|jpeg|gif|webp|svg)\b\.?',
+        '',
+        html_out,
+        flags=re.IGNORECASE,
+    )
+    return html_out
 
 
 def _build_faq_html_block(faqs: list[str], keyword: str) -> str:
@@ -2665,6 +2712,11 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
         query = (parsed.query or '').lower()
         blocked_exact = {'/', '/cart', '/checkout', '/shop', '/my-account', '/account', '/sample-page', '/hello-world'}
         blocked_contains = ('/product/', '/tag/', '/author/', '/feed', '/wp-json', '/wp-admin', '/xmlrpc.php')
+        # Reject static asset URLs (images, media, scripts, styles)
+        image_ext = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff', '.avif',
+                     '.mp4', '.mp3', '.pdf', '.zip', '.js', '.css', '.woff', '.woff2', '.ttf')
+        if any(path.endswith(ext) for ext in image_ext):
+            return False
         if path in blocked_exact:
             return False
         if any(token in path for token in blocked_contains):
@@ -2795,8 +2847,8 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
         cap = max(1, int(max_items or 20))
         site_exclude = f" -site:{project_host}" if str(project_host or '').strip() else ''
         qlist = [
-            f'"{key}" inurl:blog{site_exclude}',
-            f'"{key}" "benefits" "guide"{site_exclude}',
+            f'{key} inurl:blog{site_exclude}',
+            f'{key} "benefits" "guide"{site_exclude}',
         ]
         seen: set[str] = set()
         out: list[dict[str, Any]] = []
@@ -3191,8 +3243,13 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
     # and skip fetching from the project library (which belongs to a different site).
     _custom_anchors: list[str] = list(payload.get('internal_link_anchors') or [])
     _custom_site: str = str(payload.get('website_url') or '').strip().rstrip('/')
-    if _custom_anchors and _custom_site:
-        # Use caller-provided anchors — skip project library entirely
+    _project_host_norm = (urlparse(project.base_url or '').netloc or '').lower().replace('www.', '')
+    _custom_host_norm = (urlparse(_custom_site if _custom_site.startswith('http') else f'https://{_custom_site}').netloc or '').lower().replace('www.', '')
+    # If user gave a different website_url from the project, skip project library entirely
+    _different_site = bool(_custom_site and _custom_host_norm and _custom_host_norm != _project_host_norm)
+    if _custom_anchors:
+        # Use caller-provided anchors — skip project library entirely.
+        # Anchors can be "Anchor Text|https://url" (URL embedded) or just "Anchor Text" (needs _custom_site).
         internal_candidates = []
         for idx, raw in enumerate(_custom_anchors):
             raw = str(raw).strip()
@@ -3202,10 +3259,13 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
                 parts = raw.split('|', 1)
                 anchor_text = parts[0].strip()
                 link_url = parts[1].strip()
-            else:
+            elif _custom_site:
                 anchor_text = raw
                 slug = re.sub(r'[^a-z0-9]+', '-', raw.lower()).strip('-')
                 link_url = f"{_custom_site}/{slug}/"
+            else:
+                # No URL and no website_url — skip this anchor
+                continue
             internal_candidates.append({
                 'item_id': idx + 1,
                 'title': anchor_text,
@@ -3215,6 +3275,10 @@ async def stage_research(db: Session, run: PipelineRun, payload: dict[str, Any])
                 'score': 1000.0 - idx,
             })
         internal_link_plan = internal_candidates[:internal_links_max]
+    elif _different_site:
+        # User provided a different website_url — project library belongs to another site, skip it
+        internal_candidates = []
+        internal_link_plan = []
     else:
         internal_candidates = retrieve_internal_link_candidates(
             project_id=project.id,
@@ -3591,12 +3655,18 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
     title_candidates = payload.get('title_candidates', [])
 
     runtime = resolve_project_runtime_config(db, project)
-    openai_key = runtime.get('openai_api_key')
-    provider = OpenAIProvider(
-        api_key=openai_key,
-        model=runtime.get('openai_model'),
-        image_model=runtime.get('image_model'),
-    )
+    ai_provider_name = str(runtime.get('ai_provider') or 'openai').lower()
+    if ai_provider_name == 'claude' and runtime.get('anthropic_api_key'):
+        provider = ClaudeProvider(
+            api_key=runtime.get('anthropic_api_key'),
+            model=runtime.get('anthropic_model'),
+        )
+    else:
+        provider = OpenAIProvider(
+            api_key=runtime.get('openai_api_key'),
+            model=runtime.get('openai_model'),
+            image_model=runtime.get('image_model'),
+        )
 
     requested_link_cap = max(1, int(runtime.get('internal_links_max') or 8))
     min_links = min(requested_link_cap, len(candidates)) if candidates else 0
@@ -3638,7 +3708,7 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         'You are an SEO content strategist. Return strict JSON only (no markdown) with keys: '
         'title,meta_title,meta_description,slug,html,title_variants,featured_image_prompt,alt_text,caption. '
         f"Topic: {topic.title}. Primary keyword: {topic.primary_keyword}. Secondary keywords: {topic.secondary_keywords_json}. "
-        f"Project base URL: {project.base_url}. "
+        f"Project base URL: {str(payload.get('website_url') or project.base_url or '').strip().rstrip('/')}. "
         f"Pattern: {brief['pattern_key']}. Tone: {brief['tone']}. Persona: {brief['persona']}. Reading level: {brief['reading_level']}. "
         f"Structure type: {brief.get('structure_type')}. Intro style: {brief.get('intro_style')}. CTA style: {brief.get('cta_style')}. "
         f"Outline H2/H3: {brief['h2'] + brief['h3']}. FAQ ideas: {brief['faqs']}. "
@@ -3653,22 +3723,30 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         f"never repeat exact same anchor text, and keep at most {max_links} total links for ~{desired_word_count} words. "
         "Use natural anchor styles like 'Read more', 'Explore this', 'Learn more', and context-specific anchors "
         "(avoid repetitive 'Reference:' wording). "
+        "CRITICAL: Never link to image files (.png, .jpg, .jpeg, .gif, .webp, .svg) or any file with an extension. "
+        "Only link to page URLs (no file extension in URL path). If a candidate URL ends in an image extension, skip it entirely. "
         f"Niche classification: {niche_payload}. "
         "Keyword alignment rules: primary keyword must appear naturally in intro (first 120 words), at least 2 H2 headings, and conclusion. "
         "Use at least 3 secondary keywords naturally across sections. Avoid stuffing. "
         f"Forbidden phrase list: {disallowed_phrases}. Never use these phrases. "
         "Never include source URLs, research links, source appendices, key research signals, citations, or references sections in final HTML. "
-        f"Content length requirement: produce approximately {desired_word_count} words in body_html with detailed multi-paragraph sections. "
+        f"STRICT WORD COUNT: The html must contain EXACTLY {desired_word_count} words (±10%). "
+        f"Target range: {int(desired_word_count * 0.92)}–{int(desired_word_count * 1.08)} words. "
+        "Do NOT exceed this range. Count every word including headings, bullets, and paragraphs. "
         "Depth requirement: each H2 section must include at least 2 substantial paragraphs (around 70+ words each) and one practical element "
         "(bullet checklist, comparison list, or concrete example). Avoid short one-line descriptions under headings. "
         "Mandatory structure: engaging hook intro, detailed H2/H3 sections, practical examples, bullets/checklists where useful, "
         "a dedicated FAQ section (exactly 5 Q&A), and a strong conclusion section with CTA. "
         "FAQ rules: each FAQ answer must directly answer its question, no generic manufacturing/QA text, "
         "and reject answer patterns like process controls, acceptance criteria, pilot validation, defect trends, total landed cost. "
-        "Title constraints: do not use generic prefixes like 'Complete Guide' or 'Ultimate Guide'; "
-        "never append project/site name (for example, avoid 'for My SEO Blog'). "
-        "Use a natural, trend-aware, intent-specific title that looks like a modern ranking article headline. "
+        f"TITLE RULE: The user provided this exact topic/title: '{topic.title}'. "
+        "Use this EXACTLY as the blog title — do NOT modify, expand, rewrite, or add words like 'Top 10', 'Complete Guide', year suffixes, or any other changes. "
+        "The title field in your JSON response must match the provided topic exactly. "
         "Do not output placeholders or template answers. If unsure, omit. Avoid keyword stuffing. Keep paragraphs natural, specific, and conversion-oriented. "
+        "STRICT HTML RULES: (1) Do NOT include any <img> tags in the html field — images are added by the system separately. "
+        "(2) Do NOT link to any file with an extension (.png, .jpg, .jpeg, .gif, .webp, .svg, .pdf etc). "
+        "(3) Internal links must only use proper webpage URLs from the internal link candidates list. "
+        "(4) If a candidate URL ends with a file extension, skip it. "
         f"Image mode: {image_mode}. Inline image count target: {inline_images_count}. "
         f"Banned claims: {project.settings_json.get('banned_claims', [])}."
     )
@@ -3716,12 +3794,18 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
             {'sample': raw_generation_text[:200]},
         )
 
-    title = _resolve_draft_title(
-        generation.get('title'),
-        topic.primary_keyword,
-        payload.get('subtopics', []),
-        title_candidates,
-    )
+    # If user explicitly provided a topic (not just a keyword), use it as the title exactly
+    _user_topic_raw = str(payload.get('topic') or '').strip().split('\n')[0].strip()
+    _topic_looks_like_title = bool(_user_topic_raw and len(_user_topic_raw.split()) >= 4 and not _user_topic_raw.endswith('?'))
+    if _topic_looks_like_title:
+        title = _user_topic_raw
+    else:
+        title = _resolve_draft_title(
+            generation.get('title'),
+            topic.primary_keyword,
+            payload.get('subtopics', []),
+            title_candidates,
+        )
     h2s = brief.get('h2', [])
     generated_html = generation.get('html') or ''
     min_acceptable_words = max(1000, int(desired_word_count * 0.9))
@@ -3843,6 +3927,7 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         project_base_url=str(payload.get('website_url') or project.base_url or ''),
         candidate_urls=external_candidate_urls,
     )
+    html = _remove_static_asset_links(html)
     html = _remove_banned_phrase_paragraphs(html)
     html = _cleanup_repetition(html)
 
@@ -3974,7 +4059,7 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         keyword=topic.primary_keyword,
         desired_words=desired_word_count,
         min_ratio=0.92,
-        max_ratio=1.12,
+        max_ratio=1.08,
     )
     html = _sanitize_generated_blog_html(html)
     html = _ensure_internal_links_placement(

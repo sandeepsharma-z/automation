@@ -62,19 +62,25 @@ function TagInput({ value, onChange, placeholder }) {
 
 /* ─── Progress steps ─────────────────────────────────────────────────── */
 const STEPS = [
-  { icon: '🔍', label: 'Searching top-ranking competitor pages…' },
-  { icon: '📖', label: 'Reading & extracting competitor content…' },
-  { icon: '🧠', label: 'Analysing content gaps & NLP signals…' },
-  { icon: '✍️', label: 'Writing your SEO-optimised blog post…' },
-  { icon: '✅', label: 'Running quality checks & finalising…' },
+  { icon: '🔍', label: 'Searching top-ranking competitor pages for your keyword…' },
+  { icon: '📖', label: 'Crawling & extracting competitor content, headings, entities…' },
+  { icon: '🧠', label: 'Analysing content gaps, NLP signals & building SEO brief…' },
+  { icon: '✍️', label: 'Writing your SEO-optimised blog post with AI…' },
+  { icon: '✅', label: 'Running quality checks, internal linking & finalising…' },
 ];
 
-function ProgressPanel({ step }) {
+function ProgressPanel({ step, elapsed, onCancel }) {
+  const min = Math.floor(elapsed / 60);
+  const sec = elapsed % 60;
+  const timeStr = min > 0 ? `${min}m ${sec}s` : `${sec}s`;
   return (
     <div className="bg-progress card">
       <div className="bg-spinner" />
-      <p style={{ textAlign: 'center', color: '#4064a6', margin: '0 0 20px', fontWeight: 600 }}>
-        Generating your blog — please wait (60–120s)
+      <p style={{ textAlign: 'center', color: '#4064a6', margin: '0 0 4px', fontWeight: 600 }}>
+        Generating your blog — this takes 2–8 minutes
+      </p>
+      <p style={{ textAlign: 'center', color: '#607eaf', margin: '0 0 20px', fontSize: 13 }}>
+        ⏱ Elapsed: <strong style={{ color: '#274774' }}>{timeStr}</strong> — AI is working, do not close this page
       </p>
       <div style={{ display: 'grid', gap: 10 }}>
         {STEPS.map((s, i) => (
@@ -88,6 +94,20 @@ function ProgressPanel({ step }) {
             <span>{s.label}</span>
           </div>
         ))}
+      </div>
+      {step >= 2 && (
+        <p style={{ margin: '16px 0 0', textAlign: 'center', fontSize: 12, color: '#607eaf' }}>
+          Research phase takes longest (3–6 min) — AI is reading competitor pages &amp; building content brief
+        </p>
+      )}
+      <div style={{ marginTop: 20, textAlign: 'center' }}>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{ padding: '9px 24px', fontSize: 13, fontWeight: 600, background: 'rgba(254,226,226,.8)', color: '#dc2626', border: '1px solid rgba(252,165,165,.6)', borderRadius: 10, cursor: 'pointer' }}
+        >
+          ⛔ Stop Generation
+        </button>
       </div>
     </div>
   );
@@ -171,24 +191,100 @@ export default function BlogGenPage() {
   const [genImage, setGenImage] = useState(null);   // { b64, revised_prompt, size }
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError] = useState('');
+  const [editedHtml, setEditedHtml] = useState('');  // HTML with manually applied links
+  const [elapsed, setElapsed]   = useState(0);
   const stepTimer               = useRef(null);
+  const elapsedTimer            = useRef(null);
+  const cancelRef               = useRef(null);  // AbortController for active generation
+  // Outline-first workflow
+  const [outlineData, setOutlineData]       = useState(null);   // { outline, faqs, seo, pipeline_run_id }
+  const [editedOutline, setEditedOutline]   = useState([]);     // user-editable heading list
+  const [outlineLoading, setOutlineLoading] = useState(false);
+  const [outlineError, setOutlineError]     = useState('');
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
 
   function startStepTimer() {
     let s = 0;
+    let e = 0;
     setStep(0);
+    setElapsed(0);
     stepTimer.current = setInterval(() => {
       s += 1;
-      // cycle back to step 2 (research loop) if we exceed steps, so spinner keeps going
       if (s >= STEPS.length) s = 2;
       setStep(s);
     }, 30000);
+    elapsedTimer.current = setInterval(() => {
+      e += 1;
+      setElapsed(e);
+    }, 1000);
   }
-  function stopStepTimer() { if (stepTimer.current) clearInterval(stepTimer.current); }
+  function stopStepTimer() {
+    if (stepTimer.current) clearInterval(stepTimer.current);
+    if (elapsedTimer.current) clearInterval(elapsedTimer.current);
+  }
 
-  async function onGenerate(e) {
-    e.preventDefault();
+  function cancelGeneration() {
+    if (cancelRef.current) {
+      cancelRef.current.abort();
+      cancelRef.current = null;
+    }
+    stopStepTimer();
+    setLoading(false);
+    setError('Generation cancelled.');
+  }
+
+  async function onGenerateOutline(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!form.primary_keyword.trim() && !form.topic.trim()) {
+      setOutlineError('Primary keyword ya topic zaroori hai.');
+      return;
+    }
+    setOutlineError('');
+    setOutlineData(null);
+    setEditedOutline([]);
+    setOutlineLoading(true);
+    try {
+      const primaryKw = form.primary_keyword.trim() || form.topic.trim();
+      const secondaryKws = [...form.secondary_keywords, ...form.nlp_terms]
+        .filter((k) => k.toLowerCase() !== primaryKw.toLowerCase());
+      let topicText = form.topic.trim() || primaryKw;
+      if (form.note.trim()) topicText += `\n\nExtra instructions: ${form.note.trim()}`;
+      const siteUrl = form.website_url.trim().replace(/\/+$/, '');
+      const payload = {
+        project_id: 1,
+        platform: 'none',
+        website_url: siteUrl || undefined,
+        internal_link_anchors: form.internal_link_anchors.length ? form.internal_link_anchors : undefined,
+        primary_keyword: primaryKw,
+        secondary_keywords: secondaryKws,
+        topic: topicText,
+        tone: 'auto',
+        country: form.country,
+        language: 'en',
+        desired_word_count: Number(form.word_count),
+        image_mode: 'featured_only',
+        inline_images_count: 0,
+        autopublish: false,
+        publish_status: 'draft',
+        force_new: true,
+      };
+      const data = await apiFetch('/api/blog-agent/outline?async_job=false', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        timeoutMs: 600000,
+      });
+      setOutlineData(data);
+      setEditedOutline(Array.isArray(data.outline) ? [...data.outline] : []);
+    } catch (err) {
+      setOutlineError(String(err.message || err));
+    } finally {
+      setOutlineLoading(false);
+    }
+  }
+
+  async function onGenerate(e, outlineOverride) {
+    if (e && e.preventDefault) e.preventDefault();
     if (!form.primary_keyword.trim() && !form.topic.trim()) {
       setError('Primary keyword ya topic zaroori hai.');
       return;
@@ -228,19 +324,27 @@ export default function BlogGenPage() {
         desired_word_count: Number(form.word_count),
         image_mode: 'featured_only',
         inline_images_count: 0,
+        outline_override: outlineOverride && outlineOverride.length ? outlineOverride : undefined,
         autopublish: false,
         publish_status: 'draft',
         force_new: true,
       };
 
+      cancelRef.current = new AbortController();
       const data = await apiFetch('/api/blog-agent/generate?async_job=false', {
         method: 'POST',
         body: JSON.stringify(payload),
-        timeoutMs: 360000, // 6 minutes — blog gen can take 120–180s
+        timeoutMs: 900000,
+        signal: cancelRef.current.signal,
       });
+      cancelRef.current = null;
 
       setStep(STEPS.length - 1);
-      setTimeout(() => setDraft(data), 500);
+      setTimeout(() => {
+        setDraft(data);
+        setEditedHtml('');  // reset on new generation
+        setOutlineData(null); // clear outline panel once blog is generated
+      }, 500);
 
       /* ── Image generation (optional) ── */
       if (form.gen_image) {
@@ -269,26 +373,71 @@ export default function BlogGenPage() {
     }
   }
 
-  /* Normalise response — API returns { draft_id, state: { title, content_html, ... } } */
+  /* Normalise response — API returns { draft_id, state: { title, content_html, crawl_sources, evidence_panel, ... } } */
   const s = draft?.state || {};
-  const blogHtml   = s.content_html  || '';
-  const blogTitle  = s.title         || '';
-  const blogSlug   = s.slug          || '';
-  const sources    = Array.isArray(s.sources_json)   ? s.sources_json   : [];
-  const research   = s.research_summary              || {};
-  const faqList    = Array.isArray(s.faq_json)       ? s.faq_json       : [];
+  const blogHtml      = s.content_html  || '';
+  const blogTitle     = s.title         || '';
+  const blogSlug      = s.slug          || '';
+  const sources       = Array.isArray(s.crawl_sources)  ? s.crawl_sources  : [];
+  const evidencePanel = Array.isArray(s.evidence_panel) ? s.evidence_panel : [];
+  const research      = s.research_summary              || {};
+  const faqList       = Array.isArray(s.faq_json)       ? s.faq_json       : [];
+  const qaScores      = s.qa_scores                     || {};
+  const pipelineEvents = Array.isArray(s.pipeline_events) ? s.pipeline_events : [];
+
+  // editedHtml takes priority once user has applied any links manually
+  const activeHtml = editedHtml || blogHtml;
+
+  // Parse internal_link_anchors into { anchor, url, applied } objects
+  const siteBase = form.website_url.trim().replace(/\/+$/, '');
+  const parsedAnchors = form.internal_link_anchors.map((raw) => {
+    if (raw.includes('|')) {
+      const [a, u] = raw.split('|', 2);
+      return { anchor: a.trim(), url: u.trim() };
+    }
+    const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return { anchor: raw.trim(), url: siteBase ? `${siteBase}/${slug}/` : `/${slug}/` };
+  });
+
+  function applyLink(anchor, url) {
+    const base = editedHtml || blogHtml;
+    // Replace first unlinked occurrence of anchor text (case-insensitive, whole word boundary)
+    const escaped = anchor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(
+      `(?<!<a[^>]*>)(?<!href="[^"]*)(${escaped})(?![^<]*<\\/a>)`,
+      'i'
+    );
+    // Simple approach: find first occurrence not already inside an <a> tag
+    const newHtml = base.replace(regex, `<a href="${url}" title="${anchor}">${anchor}</a>`);
+    if (newHtml !== base) {
+      setEditedHtml(newHtml);
+      return true;
+    }
+    return false;
+  }
+
+  function removeLink(url) {
+    const base = editedHtml || blogHtml;
+    const escaped = url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`<a[^>]*href="${escaped}"[^>]*>([^<]*)<\\/a>`, 'gi');
+    setEditedHtml(base.replace(regex, '$1'));
+  }
+
+  function isApplied(url) {
+    return activeHtml.includes(`href="${url}"`);
+  }
 
   function downloadHtml() {
-    if (!blogHtml) return;
-    const blob = new Blob([blogHtml], { type: 'text/html' });
+    if (!activeHtml) return;
+    const blob = new Blob([activeHtml], { type: 'text/html' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `${blogSlug || 'blog'}.html`;
     a.click();
   }
 
-  const wordCount = blogHtml
-    ? blogHtml.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length
+  const wordCount = activeHtml
+    ? activeHtml.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length
     : (s.word_count || 0);
 
   return (
@@ -344,13 +493,21 @@ export default function BlogGenPage() {
 
             <label className="bg-label">
               Internal Link Anchors
-              <span className="bg-hint"> — "Anchor Text|https://url.com" ya sirf anchor text (URL auto-generate hoga)</span>
+              <span className="bg-hint"> — type karo phir Enter dabao</span>
             </label>
             <TagInput
               value={form.internal_link_anchors}
               onChange={(v) => set('internal_link_anchors', v)}
-              placeholder="e.g. payroll software|https://yoursite.com/payroll-software/"
+              placeholder="Anchor text likhko → Enter dabao (e.g. payroll software)"
             />
+            <p style={{ fontSize: 12, color: '#607eaf', margin: '4px 0 0' }}>
+              Format: <code style={{ background: 'rgba(219,234,254,.5)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>Anchor Text|https://url.com</code> &nbsp;ya sirf anchor text (URL auto-bnega) · Enter ya comma se add karo
+            </p>
+            {form.internal_link_anchors.length > 0 && (
+              <p style={{ fontSize: 12, color: '#166534', margin: '4px 0 0', fontWeight: 600 }}>
+                ✅ {form.internal_link_anchors.length} anchor{form.internal_link_anchors.length > 1 ? 's' : ''} added — Apply Links tab mein click karke blog mein insert karo
+              </p>
+            )}
 
             <label className="bg-label">
               Link Placement Suggestion
@@ -477,27 +634,136 @@ export default function BlogGenPage() {
             )}
 
             {error && <div className="msg error">{error}</div>}
+            {outlineError && <div className="msg error">{outlineError}</div>}
 
-            <button type="submit" disabled={loading} style={{ marginTop: 8, width: '100%', padding: '13px 20px', fontSize: 15 }}>
-              {loading ? '⏳ Generating…' : '⚡ Generate Blog'}
+            <button
+              type="button"
+              disabled={loading || outlineLoading}
+              onClick={onGenerateOutline}
+              style={{ width: '100%', padding: '13px 20px', fontSize: 15, marginTop: 8, background: outlineLoading ? 'rgba(219,234,254,.5)' : undefined, opacity: loading || outlineLoading ? 0.7 : 1 }}
+            >
+              {outlineLoading ? '⏳ Generating outline…' : '📋 Generate Outline'}
             </button>
 
             <p style={{ textAlign: 'center', color: '#607eaf', fontSize: 12, margin: '8px 0 0' }}>
-              AI researches top competitors, analyses gaps, writes an SEO-winning post. Takes ~60–120s.
+              AI researches top competitors, builds outline — review &amp; approve before full generation.
             </p>
           </form>
 
           {/* ══ RIGHT: Results ══ */}
           <div className="bg-result">
-            {!loading && !draft && (
+            {!loading && !draft && !outlineData && !outlineLoading && (
               <div className="card empty-state" style={{ padding: 48, textAlign: 'center' }}>
                 <div style={{ fontSize: '3rem', marginBottom: 12 }}>📄</div>
                 <h4>Generated blog will appear here</h4>
-                <p>Fill the form → click Generate Blog → AI will research top-ranking pages for your keyword and write a better post.</p>
+                <p>Fill the form → click <strong>Generate Outline First</strong> to review headings, or <strong>Generate Blog Directly</strong> to skip straight to the full post.</p>
               </div>
             )}
 
-            {loading && <ProgressPanel step={step} />}
+            {/* ── Outline loading ── */}
+            {outlineLoading && (
+              <div className="card bg-progress" style={{ padding: '40px 32px', textAlign: 'center' }}>
+                <div className="bg-spinner" />
+                <p style={{ color: '#4064a6', fontWeight: 600, margin: '0 0 6px' }}>Researching competitors &amp; generating outline…</p>
+                <p style={{ color: '#607eaf', fontSize: 13, margin: 0 }}>Takes 1–3 minutes. AI reads top-ranking pages to build a content plan.</p>
+              </div>
+            )}
+
+            {/* ── Outline editor ── */}
+            {outlineData && !loading && (
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div className="bg-draft-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+                    <span className="pill" style={{ background: 'rgba(219,234,254,.8)', color: '#1e40af' }}>📋 Outline Ready</span>
+                    <span className="pill muted">{editedOutline.length} headings</span>
+                  </div>
+                  <h2 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#132d58' }}>
+                    {outlineData.seo?.meta_title || 'Blog Outline'}
+                  </h2>
+                  <p style={{ margin: 0, fontSize: 12, color: '#607eaf' }}>
+                    Review and edit the headings below. Click <strong>Approve &amp; Generate</strong> when ready.
+                  </p>
+                </div>
+
+                <div style={{ padding: '16px 20px', display: 'grid', gap: 8 }}>
+                  {editedOutline.map((heading, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: '#9ca3af', minWidth: 24, textAlign: 'right', flexShrink: 0 }}>
+                        {i < Math.min(5, editedOutline.length) && editedOutline.length > 1 ? 'H2' : 'H3'}
+                      </span>
+                      <input
+                        value={heading}
+                        onChange={(e) => {
+                          const updated = [...editedOutline];
+                          updated[i] = e.target.value;
+                          setEditedOutline(updated);
+                        }}
+                        style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(124,169,243,.4)', fontSize: 14, color: '#10244d', background: 'rgba(245,250,255,.9)' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditedOutline(editedOutline.filter((_, j) => j !== i))}
+                        style={{ flexShrink: 0, padding: '6px 10px', fontSize: 13, background: 'none', border: '1px solid rgba(252,165,165,.6)', borderRadius: 8, color: '#dc2626', cursor: 'pointer' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add heading */}
+                  <button
+                    type="button"
+                    onClick={() => setEditedOutline([...editedOutline, ''])}
+                    style={{ width: '100%', padding: '8px', border: '1px dashed rgba(124,169,243,.5)', borderRadius: 8, background: 'none', color: '#5b7fb9', fontSize: 13, cursor: 'pointer', marginTop: 4 }}
+                  >
+                    + Add Heading
+                  </button>
+                </div>
+
+                {/* FAQs preview */}
+                {Array.isArray(outlineData.faqs) && outlineData.faqs.length > 0 && (
+                  <details style={{ margin: '0 20px 16px', border: '1px solid rgba(124,169,243,.3)', borderRadius: 10 }}>
+                    <summary style={{ padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#5b7fb9' }}>
+                      💬 FAQs from outline ({outlineData.faqs.length})
+                    </summary>
+                    <div style={{ padding: '8px 14px' }}>
+                      {outlineData.faqs.map((faq, i) => (
+                        <div key={i} style={{ fontSize: 12, color: '#4b6290', padding: '5px 0', borderBottom: '1px solid rgba(124,169,243,.15)' }}>
+                          <strong>Q:</strong> {typeof faq === 'string' ? faq : (faq.question || faq.q || JSON.stringify(faq))}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                {/* Action buttons */}
+                <div style={{ padding: '16px 20px', display: 'flex', gap: 10, borderTop: '1px solid rgba(124,169,243,.2)', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      const filtered = editedOutline.filter((h) => h.trim());
+                      if (!filtered.length) { alert('Please add at least one heading.'); return; }
+                      onGenerate(null, filtered);
+                    }}
+                    style={{ flex: 1, padding: '12px 20px', fontSize: 15, fontWeight: 700, minWidth: 160 }}
+                  >
+                    {loading ? '⏳ Generating…' : '✅ Approve & Generate Blog'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={outlineLoading || loading}
+                    onClick={onGenerateOutline}
+                    className="secondary"
+                    style={{ padding: '12px 18px', fontSize: 14 }}
+                  >
+                    🔄 Regenerate Outline
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {loading && <ProgressPanel step={step} elapsed={elapsed} onCancel={cancelGeneration} />}
 
             {draft && !loading && (
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -523,9 +789,10 @@ export default function BlogGenPage() {
                 <div className="bg-tabs">
                   {[
                     { id: 'preview',  label: '👁 Preview' },
+                    { id: 'links',    label: `🔗 Apply Links${parsedAnchors.length ? ` (${parsedAnchors.length})` : ''}` },
                     { id: 'meta',     label: '🏷 SEO Meta' },
                     { id: 'html',     label: '💻 HTML' },
-                    { id: 'research', label: `🔬 Research (${sources.length})` },
+                    { id: 'research', label: `🔬 Research (${evidencePanel.length || sources.length})` },
                     ...(form.gen_image ? [{ id: 'image', label: '🖼️ Image' }] : []),
                   ].map((t) => (
                     <button
@@ -539,7 +806,85 @@ export default function BlogGenPage() {
                   ))}
                 </div>
 
-                {tab === 'preview' && <HtmlPreview html={blogHtml} />}
+                {tab === 'preview' && <HtmlPreview html={activeHtml} />}
+
+                {tab === 'links' && (
+                  <div style={{ padding: '16px 20px' }}>
+                    {parsedAnchors.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '32px 0', color: '#607eaf' }}>
+                        <div style={{ fontSize: '2rem', marginBottom: 10 }}>🔗</div>
+                        <p style={{ margin: 0 }}>No internal link anchors added yet.</p>
+                        <p style={{ fontSize: 13, margin: '6px 0 0' }}>Add anchors in the form on the left (Internal Link Anchors field).</p>
+                      </div>
+                    ) : (
+                      <>
+                        <p style={{ margin: '0 0 14px', fontSize: 13, color: '#4b6290' }}>
+                          Click <strong>Apply</strong> to insert each anchor as a hyperlink in the blog. The first unlinked occurrence of the text will be wrapped.
+                        </p>
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          {parsedAnchors.map(({ anchor, url }, i) => {
+                            const applied = isApplied(url);
+                            return (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: applied ? 'rgba(220,252,231,.6)' : 'rgba(219,234,254,.25)', borderRadius: 12, border: `1px solid ${applied ? 'rgba(74,222,128,.4)' : 'rgba(124,169,243,.3)'}`, flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontWeight: 700, fontSize: 14, color: '#132d58', marginBottom: 2 }}>
+                                    {anchor}
+                                  </div>
+                                  <code style={{ fontSize: 12, color: '#607eaf', background: 'none', wordBreak: 'break-all' }}>{url}</code>
+                                </div>
+                                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                                  {applied ? (
+                                    <>
+                                      <span style={{ fontSize: 12, color: '#166534', fontWeight: 600, padding: '5px 10px', background: 'rgba(187,247,208,.6)', borderRadius: 8, border: '1px solid rgba(74,222,128,.4)' }}>
+                                        ✅ Applied
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className="secondary"
+                                        style={{ padding: '5px 12px', fontSize: 12, color: '#dc2626', borderColor: 'rgba(252,165,165,.6)' }}
+                                        onClick={() => removeLink(url)}
+                                      >
+                                        ✕ Remove
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="secondary"
+                                      style={{ padding: '5px 14px', fontSize: 13, fontWeight: 600 }}
+                                      onClick={() => {
+                                        const ok = applyLink(anchor, url);
+                                        if (!ok) alert(`"${anchor}" not found in blog text (may already be linked or text not present).`);
+                                      }}
+                                    >
+                                      🔗 Apply
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {editedHtml && (
+                          <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <CopyBtn text={activeHtml} label="Copy Updated HTML" />
+                            <button type="button" className="secondary" style={{ padding: '6px 12px', fontSize: 13 }} onClick={downloadHtml}>
+                              ⬇️ Download Updated HTML
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary"
+                              style={{ padding: '6px 12px', fontSize: 13, color: '#dc2626' }}
+                              onClick={() => setEditedHtml('')}
+                            >
+                              ↩ Reset All Links
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {tab === 'meta' && (
                   <div style={{ padding: '16px 20px', display: 'grid', gap: 12 }}>
@@ -577,43 +922,66 @@ export default function BlogGenPage() {
                 {tab === 'html' && (
                   <div>
                     <div style={{ display: 'flex', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(124,169,243,.24)', background: 'rgba(245,250,255,.8)' }}>
-                      <CopyBtn text={blogHtml} label="Copy HTML" />
+                      <CopyBtn text={activeHtml} label="Copy HTML" />
                       <button type="button" className="secondary" style={{ padding: '6px 12px', fontSize: 13 }} onClick={downloadHtml}>
                         ⬇️ Download HTML
                       </button>
                     </div>
                     <pre className="codebox" style={{ margin: 0, borderRadius: '0 0 16px 16px', maxHeight: 540, overflow: 'auto', background: '#0f172a', color: '#e2e8f0', border: 'none', padding: '16px 20px', fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                      {blogHtml}
+                      {activeHtml}
                     </pre>
                   </div>
                 )}
 
                 {tab === 'research' && (
                   <div style={{ padding: '16px 20px', display: 'grid', gap: 20 }}>
-                    {/* Research summary stats */}
-                    {(research.source_count > 0 || sources.length > 0) && (
-                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                        {[
-                          { label: 'Sources fetched', val: research.source_count || sources.length },
-                          { label: 'Domains',          val: (research.source_domains || []).length || new Set(sources.map(s2 => { try { return new URL(s2.url||'').hostname; } catch { return ''; } })).size || '—' },
-                          { label: 'Top URLs found',   val: (research.top_competitor_urls || []).length || '—' },
-                        ].map(({ label, val }) => (
-                          <div key={label} style={{ flex: 1, minWidth: 120, background: 'rgba(219,234,254,.4)', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
-                            <div style={{ fontSize: 22, fontWeight: 700, color: '#1e40af' }}>{val}</div>
-                            <div style={{ fontSize: 11, color: '#5b7fb9', marginTop: 2 }}>{label}</div>
-                          </div>
-                        ))}
+
+                    {/* ── Stats row ── */}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Competitor Pages', val: sources.length || research.source_count || 0, icon: '📄' },
+                        { label: 'Domains Crawled',  val: (research.source_domains || []).length || 0, icon: '🌐' },
+                        { label: 'Top URLs',         val: (research.top_competitor_urls || []).length, icon: '🔗' },
+                        { label: 'Evidence Items',   val: evidencePanel.length, icon: '🧠' },
+                        ...(qaScores.overall_score > 0 ? [{ label: 'QA Score', val: `${Math.round(qaScores.overall_score)}/100`, icon: '✅' }] : []),
+                      ].map(({ label, val, icon }) => (
+                        <div key={label} style={{ flex: 1, minWidth: 110, background: 'rgba(219,234,254,.4)', borderRadius: 10, padding: '10px 14px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.2rem' }}>{icon}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: '#1e40af', marginTop: 2 }}>{val}</div>
+                          <div style={{ fontSize: 11, color: '#5b7fb9', marginTop: 1 }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── QA scores ── */}
+                    {qaScores.overall_score > 0 && (
+                      <div style={{ background: 'rgba(220,252,231,.5)', borderRadius: 12, padding: '12px 16px', border: '1px solid rgba(74,222,128,.3)' }}>
+                        <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#166534', fontSize: 13 }}>✅ Quality Assessment Scores</p>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                          {[
+                            { k: 'Overall',     v: qaScores.overall_score },
+                            { k: 'Originality', v: qaScores.originality_score },
+                            { k: 'Coverage',    v: qaScores.coverage_score },
+                            { k: 'E-E-A-T',     v: qaScores.eeat_score },
+                            { k: 'Practicality',v: qaScores.practicality_score },
+                          ].filter(x => x.v > 0).map(({ k, v }) => (
+                            <div key={k} style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: v >= 70 ? '#166534' : v >= 50 ? '#854d0e' : '#dc2626' }}>{Math.round(v)}</div>
+                              <div style={{ fontSize: 11, color: '#4b6290' }}>{k}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    {/* Top competitor URLs */}
+                    {/* ── Top competitor URLs ── */}
                     {(research.top_competitor_urls || []).length > 0 && (
                       <div>
-                        <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#193766', fontSize: 13 }}>🏆 Top Competitor URLs</p>
-                        <div style={{ display: 'grid', gap: 6 }}>
+                        <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#193766', fontSize: 13 }}>🏆 Top Competitor URLs Analysed</p>
+                        <div style={{ display: 'grid', gap: 5 }}>
                           {(research.top_competitor_urls || []).map((url, i) => (
                             <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                              style={{ fontSize: 13, color: '#2f6fff', wordBreak: 'break-all', padding: '6px 10px', background: 'rgba(219,234,254,.3)', borderRadius: 8, display: 'block' }}>
+                              style={{ fontSize: 12, color: '#2f6fff', wordBreak: 'break-all', padding: '6px 10px', background: 'rgba(219,234,254,.25)', borderRadius: 7, display: 'block' }}>
                               {i + 1}. {url}
                             </a>
                           ))}
@@ -621,29 +989,113 @@ export default function BlogGenPage() {
                       </div>
                     )}
 
-                    {/* Crawled sources */}
-                    {sources.length > 0 && (
+                    {/* ── Evidence panel — rich competitor analysis ── */}
+                    {evidencePanel.length > 0 && (
+                      <div>
+                        <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#193766', fontSize: 13 }}>🧠 Competitor Intelligence ({evidencePanel.length} pages)</p>
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          {evidencePanel.map((ev, i) => (
+                            <details key={i} style={{ border: '1px solid rgba(124,169,243,.3)', borderRadius: 12, overflow: 'hidden' }}>
+                              <summary style={{ padding: '10px 14px', cursor: 'pointer', background: 'rgba(245,250,255,.9)', fontWeight: 600, fontSize: 13, color: '#132d58', display: 'flex', alignItems: 'center', gap: 8, listStyle: 'none' }}>
+                                <span style={{ minWidth: 20, fontSize: 12, color: '#5b7fb9' }}>#{i + 1}</span>
+                                <span style={{ flex: 1 }}>{ev.title || ev.url}</span>
+                                {ev.competitive_strength_score > 0 && (
+                                  <span style={{ fontSize: 11, background: 'rgba(219,234,254,.8)', color: '#1e40af', borderRadius: 6, padding: '2px 7px', fontWeight: 700 }}>
+                                    Score: {Math.round(ev.competitive_strength_score)}
+                                  </span>
+                                )}
+                              </summary>
+                              <div style={{ padding: '12px 14px', background: '#fff', fontSize: 13 }}>
+                                {ev.url && (
+                                  <a href={ev.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2f6fff', fontSize: 12, wordBreak: 'break-all', display: 'block', marginBottom: 8 }}>{ev.url}</a>
+                                )}
+                                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
+                                  {ev.content_length_estimate > 0 && <span style={{ color: '#5b7fb9', fontSize: 12 }}>📝 {ev.content_length_estimate} words</span>}
+                                  {ev.media_count > 0 && <span style={{ color: '#5b7fb9', fontSize: 12 }}>🖼️ {ev.media_count} media</span>}
+                                  {ev.table_count > 0 && <span style={{ color: '#5b7fb9', fontSize: 12 }}>📊 {ev.table_count} tables</span>}
+                                  {ev.freshness_score > 0 && <span style={{ color: '#5b7fb9', fontSize: 12 }}>📅 Freshness: {Math.round(ev.freshness_score)}</span>}
+                                </div>
+                                {/* Headings */}
+                                {Array.isArray(ev.headings?.h2) && ev.headings.h2.length > 0 && (
+                                  <div style={{ marginBottom: 8 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#5b7fb9', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>H2 Headings</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                                      {ev.headings.h2.slice(0, 8).map((h, j) => (
+                                        <span key={j} style={{ fontSize: 12, background: 'rgba(219,234,254,.5)', color: '#274774', borderRadius: 6, padding: '3px 8px' }}>{h}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Entities */}
+                                {Array.isArray(ev.entities) && ev.entities.length > 0 && (
+                                  <div style={{ marginBottom: 8 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#5b7fb9', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>Key Entities / Topics</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                                      {ev.entities.slice(0, 12).map((ent, j) => (
+                                        <span key={j} style={{ fontSize: 11, background: 'rgba(254,249,195,.8)', color: '#854d0e', borderRadius: 6, padding: '2px 7px', border: '1px solid rgba(253,224,71,.4)' }}>
+                                          {typeof ent === 'string' ? ent : (ent.text || ent.name || JSON.stringify(ent))}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* FAQs from competitor */}
+                                {Array.isArray(ev.faqs) && ev.faqs.length > 0 && (
+                                  <div>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#5b7fb9', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>FAQs found ({ev.faqs.length})</div>
+                                    {ev.faqs.slice(0, 3).map((faq, j) => (
+                                      <div key={j} style={{ fontSize: 12, color: '#4b6290', marginBottom: 4 }}>
+                                        <strong>Q:</strong> {typeof faq === 'string' ? faq : (faq.question || faq.q || '')}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Crawl sources fallback (basic) ── */}
+                    {evidencePanel.length === 0 && sources.length > 0 && (
                       <div>
                         <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#193766', fontSize: 13 }}>📄 Crawled Sources ({sources.length})</p>
                         <div style={{ display: 'grid', gap: 8 }}>
                           {sources.map((src, i) => (
                             <div key={i} style={{ padding: '10px 14px', background: 'rgba(245,250,255,.9)', borderRadius: 10, border: '1px solid rgba(124,169,243,.25)', fontSize: 13 }}>
-                              <div style={{ fontWeight: 600, color: '#193766', marginBottom: 4 }}>
-                                {src.title || src.url}
+                              <div style={{ fontWeight: 600, color: '#193766', marginBottom: 4 }}>{src.title || src.domain || src.url}</div>
+                              {src.url && <a href={src.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2f6fff', fontSize: 12, wordBreak: 'break-all' }}>{src.url}</a>}
+                              <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
+                                {src.competitive_strength_score > 0 && <span style={{ fontSize: 11, color: '#5b7fb9' }}>Score: {Math.round(src.competitive_strength_score)}</span>}
+                                {src.fetch_status && <span style={{ fontSize: 11, color: src.fetch_status === 'ok' ? '#166534' : '#dc2626' }}>{src.fetch_status}</span>}
+                                {src.snippet && <p style={{ margin: '4px 0 0', color: '#4b6290', lineHeight: 1.5, fontSize: 12 }}>{src.snippet}</p>}
                               </div>
-                              {src.url && src.url !== src.title && (
-                                <a href={src.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2f6fff', fontSize: 12, wordBreak: 'break-all' }}>{src.url}</a>
-                              )}
-                              {src.word_count > 0 && <span style={{ marginLeft: 8, color: '#5b7fb9', fontSize: 11 }}>{src.word_count} words</span>}
-                              {src.snippet && <p style={{ margin: '6px 0 0', color: '#4b6290', lineHeight: 1.5 }}>{src.snippet}</p>}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {sources.length === 0 && (research.top_competitor_urls || []).length === 0 && (
-                      <p style={{ color: '#607eaf', textAlign: 'center' }}>No research data available.</p>
+                    {/* ── Pipeline events log ── */}
+                    {pipelineEvents.length > 0 && (
+                      <details style={{ border: '1px solid rgba(124,169,243,.25)', borderRadius: 10 }}>
+                        <summary style={{ padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#5b7fb9' }}>
+                          📋 Pipeline Events Log ({pipelineEvents.length})
+                        </summary>
+                        <div style={{ padding: '8px 14px', maxHeight: 220, overflow: 'auto' }}>
+                          {pipelineEvents.map((ev, i) => (
+                            <div key={i} style={{ fontSize: 11, color: '#607eaf', padding: '3px 0', borderBottom: '1px solid rgba(124,169,243,.1)' }}>
+                              <span style={{ color: '#9ca3af', marginRight: 8 }}>[{String(ev.stage || '').toUpperCase()}]</span>
+                              {ev.message || ev.event || JSON.stringify(ev)}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+
+                    {sources.length === 0 && evidencePanel.length === 0 && (research.top_competitor_urls || []).length === 0 && (
+                      <p style={{ color: '#607eaf', textAlign: 'center', padding: '20px 0' }}>No research data available for this draft.</p>
                     )}
                   </div>
                 )}

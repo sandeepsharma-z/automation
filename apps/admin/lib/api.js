@@ -85,6 +85,10 @@ export async function apiFetch(path, options = {}) {
       const controller = new AbortController();
       const timeoutMs = Number(options.timeoutMs || (method === 'GET' ? 6000 : 120000));
       timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      // Allow caller to cancel via external signal
+      if (options.signal) {
+        options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+      }
       const res = await fetch(`${base}${path}`, { ...requestOptions, signal: controller.signal });
       clearTimeout(timeoutId);
       response = res;

@@ -592,6 +592,8 @@ async def generate_outline(db: Session, request: dict[str, Any]) -> dict[str, An
         'country': resolved_country,
         'language': resolved_language,
         'platform': platform,
+        'website_url': request.get('website_url') or '',
+        'internal_link_anchors': list(request.get('internal_link_anchors') or []),
     }
 
     payload = await stage_research(db, run, payload)
@@ -732,6 +734,8 @@ async def generate_full_blog(db: Session, request: dict[str, Any]) -> dict[str, 
         'force_structure_type': structure,
         'force_intro_style': intro_style,
         'force_cta_style': cta_style,
+        'website_url': request.get('website_url') or '',
+        'internal_link_anchors': list(request.get('internal_link_anchors') or []),
     }
 
     payload = await stage_research(db, run, payload)
