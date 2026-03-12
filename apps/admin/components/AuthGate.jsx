@@ -9,7 +9,8 @@ const PRIMARY_NAV_ITEMS = [
   { href: '/projects', label: 'Projects' },
   { href: '/drafts', label: 'Drafts' },
   { href: '/blog-agent', label: 'Blog Agent' },
-  { href: '/blog-gen', label: '✍️ Blog Generator' },
+  { href: '/blog-gen', label: '✍️ External Blog Generator' },
+  { href: '/blog-history', label: '📋 Blog History' },
   { href: '/seo-reports', label: 'SEO Reports' },
   { href: '/settings', label: 'Settings' },
 ];
