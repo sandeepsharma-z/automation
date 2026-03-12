@@ -251,18 +251,27 @@ export default function BlogGenPage() {
     }
   }
 
+  /* Normalise response — API returns { draft_id, state: { title, content_html, ... } } */
+  const s = draft?.state || {};
+  const blogHtml   = s.content_html  || '';
+  const blogTitle  = s.title         || '';
+  const blogSlug   = s.slug          || '';
+  const sources    = Array.isArray(s.sources_json)   ? s.sources_json   : [];
+  const research   = s.research_summary              || {};
+  const faqList    = Array.isArray(s.faq_json)       ? s.faq_json       : [];
+
   function downloadHtml() {
-    if (!draft?.html) return;
-    const blob = new Blob([draft.html], { type: 'text/html' });
+    if (!blogHtml) return;
+    const blob = new Blob([blogHtml], { type: 'text/html' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${draft.slug || 'blog'}.html`;
+    a.download = `${blogSlug || 'blog'}.html`;
     a.click();
   }
 
-  const wordCount = draft?.html
-    ? draft.html.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length
-    : 0;
+  const wordCount = blogHtml
+    ? blogHtml.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length
+    : (s.word_count || 0);
 
   return (
     <AuthGate>
@@ -435,24 +444,28 @@ export default function BlogGenPage() {
                 {/* Header */}
                 <div className="bg-draft-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-                    <span className="pill">Draft</span>
-                    <span className="pill muted">~{wordCount.toLocaleString()} words</span>
-                    {draft.cost_estimate_usd > 0 && (
+                    <span className="pill">Draft #{draft.draft_id}</span>
+                    <span className="pill muted">~{Number(wordCount).toLocaleString()} words</span>
+                    {sources.length > 0 && (
                       <span className="pill muted" style={{ color: '#166534' }}>
-                        ${draft.cost_estimate_usd.toFixed(4)}
+                        {sources.length} competitor sources
                       </span>
                     )}
+                    {draft.status && (
+                      <span className="pill muted">{draft.status}</span>
+                    )}
                   </div>
-                  <h2 style={{ margin: '0 0 6px', fontSize: '1.25rem', color: '#132d58' }}>{draft.title}</h2>
-                  <code style={{ fontSize: 12, color: '#607eaf', background: 'none' }}>/{draft.slug}</code>
+                  <h2 style={{ margin: '0 0 6px', fontSize: '1.25rem', color: '#132d58' }}>{blogTitle}</h2>
+                  {blogSlug && <code style={{ fontSize: 12, color: '#607eaf', background: 'none' }}>/{blogSlug}</code>}
                 </div>
 
                 {/* Tabs */}
                 <div className="bg-tabs">
                   {[
-                    { id: 'preview', label: '👁 Preview' },
-                    { id: 'meta',    label: '🏷 SEO Meta' },
-                    { id: 'html',    label: '💻 HTML' },
+                    { id: 'preview',  label: '👁 Preview' },
+                    { id: 'meta',     label: '🏷 SEO Meta' },
+                    { id: 'html',     label: '💻 HTML' },
+                    { id: 'research', label: `🔬 Research (${sources.length})` },
                     ...(form.gen_image ? [{ id: 'image', label: '🖼️ Image' }] : []),
                   ].map((t) => (
                     <button
@@ -466,29 +479,29 @@ export default function BlogGenPage() {
                   ))}
                 </div>
 
-                {tab === 'preview' && <HtmlPreview html={draft.html || ''} />}
+                {tab === 'preview' && <HtmlPreview html={blogHtml} />}
 
                 {tab === 'meta' && (
                   <div style={{ padding: '16px 20px', display: 'grid', gap: 12 }}>
                     {[
-                      { key: 'Title',     val: draft.title },
-                      { key: 'Slug',      val: draft.slug },
-                      { key: 'Meta Title',val: draft.meta_title },
-                      { key: 'Meta Desc', val: draft.meta_description },
+                      { key: 'Title',      val: blogTitle },
+                      { key: 'Slug',       val: blogSlug },
+                      { key: 'Meta Title', val: s.meta_title },
+                      { key: 'Meta Desc',  val: s.meta_description },
                     ].map(({ key, val }) => (
                       <div key={key} className="bg-meta-row">
                         <span className="bg-meta-key">{key}</span>
-                        <span style={{ flex: 1, fontSize: 14, color: '#10244d', lineHeight: 1.5 }}>{val}</span>
+                        <span style={{ flex: 1, fontSize: 14, color: '#10244d', lineHeight: 1.5 }}>{val || <em style={{ color: '#94a3b8' }}>—</em>}</span>
                         <CopyBtn text={val || ''} label={key} />
                       </div>
                     ))}
-                    {draft.faq_json?.length > 0 && (
+                    {faqList.length > 0 && (
                       <div>
                         <p style={{ margin: '8px 0 6px', fontWeight: 700, color: '#193766', fontSize: 13 }}>
-                          FAQs ({draft.faq_json.length})
+                          FAQs ({faqList.length})
                         </p>
                         <div style={{ display: 'grid', gap: 8 }}>
-                          {draft.faq_json.map((faq, i) => (
+                          {faqList.map((faq, i) => (
                             <div key={i} className="codebox" style={{ fontSize: 13 }}>
                               <strong>Q:</strong> {faq.question || faq.q}
                               <br />
@@ -504,14 +517,74 @@ export default function BlogGenPage() {
                 {tab === 'html' && (
                   <div>
                     <div style={{ display: 'flex', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(124,169,243,.24)', background: 'rgba(245,250,255,.8)' }}>
-                      <CopyBtn text={draft.html || ''} label="Copy HTML" />
+                      <CopyBtn text={blogHtml} label="Copy HTML" />
                       <button type="button" className="secondary" style={{ padding: '6px 12px', fontSize: 13 }} onClick={downloadHtml}>
                         ⬇️ Download HTML
                       </button>
                     </div>
                     <pre className="codebox" style={{ margin: 0, borderRadius: '0 0 16px 16px', maxHeight: 540, overflow: 'auto', background: '#0f172a', color: '#e2e8f0', border: 'none', padding: '16px 20px', fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                      {draft.html}
+                      {blogHtml}
                     </pre>
+                  </div>
+                )}
+
+                {tab === 'research' && (
+                  <div style={{ padding: '16px 20px', display: 'grid', gap: 20 }}>
+                    {/* Research summary stats */}
+                    {(research.source_count > 0 || sources.length > 0) && (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {[
+                          { label: 'Sources fetched', val: research.source_count || sources.length },
+                          { label: 'Domains',          val: (research.source_domains || []).length || new Set(sources.map(s2 => { try { return new URL(s2.url||'').hostname; } catch { return ''; } })).size || '—' },
+                          { label: 'Top URLs found',   val: (research.top_competitor_urls || []).length || '—' },
+                        ].map(({ label, val }) => (
+                          <div key={label} style={{ flex: 1, minWidth: 120, background: 'rgba(219,234,254,.4)', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: 22, fontWeight: 700, color: '#1e40af' }}>{val}</div>
+                            <div style={{ fontSize: 11, color: '#5b7fb9', marginTop: 2 }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Top competitor URLs */}
+                    {(research.top_competitor_urls || []).length > 0 && (
+                      <div>
+                        <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#193766', fontSize: 13 }}>🏆 Top Competitor URLs</p>
+                        <div style={{ display: 'grid', gap: 6 }}>
+                          {(research.top_competitor_urls || []).map((url, i) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize: 13, color: '#2f6fff', wordBreak: 'break-all', padding: '6px 10px', background: 'rgba(219,234,254,.3)', borderRadius: 8, display: 'block' }}>
+                              {i + 1}. {url}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Crawled sources */}
+                    {sources.length > 0 && (
+                      <div>
+                        <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#193766', fontSize: 13 }}>📄 Crawled Sources ({sources.length})</p>
+                        <div style={{ display: 'grid', gap: 8 }}>
+                          {sources.map((src, i) => (
+                            <div key={i} style={{ padding: '10px 14px', background: 'rgba(245,250,255,.9)', borderRadius: 10, border: '1px solid rgba(124,169,243,.25)', fontSize: 13 }}>
+                              <div style={{ fontWeight: 600, color: '#193766', marginBottom: 4 }}>
+                                {src.title || src.url}
+                              </div>
+                              {src.url && src.url !== src.title && (
+                                <a href={src.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2f6fff', fontSize: 12, wordBreak: 'break-all' }}>{src.url}</a>
+                              )}
+                              {src.word_count > 0 && <span style={{ marginLeft: 8, color: '#5b7fb9', fontSize: 11 }}>{src.word_count} words</span>}
+                              {src.snippet && <p style={{ margin: '6px 0 0', color: '#4b6290', lineHeight: 1.5 }}>{src.snippet}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {sources.length === 0 && (research.top_competitor_urls || []).length === 0 && (
+                      <p style={{ color: '#607eaf', textAlign: 'center' }}>No research data available.</p>
+                    )}
                   </div>
                 )}
 
@@ -546,7 +619,7 @@ export default function BlogGenPage() {
                             onClick={() => {
                               const a = document.createElement('a');
                               a.href = `data:image/png;base64,${genImage.b64}`;
-                              a.download = `${draft.slug || 'blog'}-image.png`;
+                              a.download = `${blogSlug || 'blog'}-image.png`;
                               a.click();
                             }}
                           >
