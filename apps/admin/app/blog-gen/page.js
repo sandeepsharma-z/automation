@@ -248,8 +248,7 @@ export default function BlogGenPage() {
       const primaryKw = form.primary_keyword.trim() || form.topic.trim();
       const secondaryKws = [...form.secondary_keywords, ...form.nlp_terms]
         .filter((k) => k.toLowerCase() !== primaryKw.toLowerCase());
-      let topicText = form.topic.trim() || primaryKw;
-      if (form.note.trim()) topicText += `\n\nExtra instructions: ${form.note.trim()}`;
+      const topicText = form.topic.trim() || primaryKw;
       const siteUrl = form.website_url.trim().replace(/\/+$/, '');
       const payload = {
         project_id: 1,
@@ -259,6 +258,7 @@ export default function BlogGenPage() {
         primary_keyword: primaryKw,
         secondary_keywords: secondaryKws,
         topic: topicText,
+        extra_instructions: form.note.trim() || undefined,
         tone: 'auto',
         country: form.country,
         language: 'en',
@@ -303,10 +303,11 @@ export default function BlogGenPage() {
         ...form.nlp_terms,
       ].filter((k) => k.toLowerCase() !== primaryKw.toLowerCase());
 
-      let topicText = form.topic.trim() || primaryKw;
-      if (form.note.trim()) topicText += `\n\nExtra instructions: ${form.note.trim()}`;
+      const topicText = form.topic.trim() || primaryKw;
+      const extraParts = [];
+      if (form.note.trim()) extraParts.push(form.note.trim());
       if (form.link_placements.length && form.internal_link_anchors.length) {
-        topicText += `\n\nInternal link placement instructions: Place internal links naturally within these specific sections of the article — ${form.link_placements.join(', ')}. Do NOT cluster all links in one place; distribute them contextually.`;
+        extraParts.push(`Internal link placement instructions: Place internal links naturally within these specific sections of the article — ${form.link_placements.join(', ')}. Do NOT cluster all links in one place; distribute them contextually.`);
       }
 
       const siteUrl = form.website_url.trim().replace(/\/+$/, '');
@@ -318,6 +319,8 @@ export default function BlogGenPage() {
         primary_keyword: primaryKw,
         secondary_keywords: secondaryKws,
         topic: topicText,
+        extra_instructions: extraParts.length ? extraParts.join('\n\n') : undefined,
+        link_placements: form.link_placements.length ? form.link_placements : undefined,
         tone: 'auto',
         country: form.country,
         language: 'en',
@@ -656,7 +659,7 @@ export default function BlogGenPage() {
               <div className="card empty-state" style={{ padding: 48, textAlign: 'center' }}>
                 <div style={{ fontSize: '3rem', marginBottom: 12 }}>📄</div>
                 <h4>Generated blog will appear here</h4>
-                <p>Fill the form → click <strong>Generate Outline First</strong> to review headings, or <strong>Generate Blog Directly</strong> to skip straight to the full post.</p>
+                <p>Fill the form → click <strong>Generate Outline</strong> to review headings before the full blog is written.</p>
               </div>
             )}
 
@@ -678,7 +681,7 @@ export default function BlogGenPage() {
                     <span className="pill muted">{editedOutline.length} headings</span>
                   </div>
                   <h2 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#132d58' }}>
-                    {outlineData.seo?.meta_title || 'Blog Outline'}
+                    {form.topic.trim() || form.primary_keyword.trim() || 'Blog Outline'}
                   </h2>
                   <p style={{ margin: 0, fontSize: 12, color: '#607eaf' }}>
                     Review and edit the headings below. Click <strong>Approve &amp; Generate</strong> when ready.
@@ -689,7 +692,7 @@ export default function BlogGenPage() {
                   {editedOutline.map((heading, i) => (
                     <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <span style={{ fontSize: 12, color: '#9ca3af', minWidth: 24, textAlign: 'right', flexShrink: 0 }}>
-                        {i < Math.min(5, editedOutline.length) && editedOutline.length > 1 ? 'H2' : 'H3'}
+                        {/^\d+[\.\)]\s/.test(heading) ? 'H3' : 'H2'}
                       </span>
                       <input
                         value={heading}

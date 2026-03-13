@@ -9,6 +9,9 @@ const EMPTY = {
   openai_api_key: '',
   openai_model: 'gpt-4.1-mini',
   image_model: 'gpt-image-1',
+  anthropic_api_key: '',
+  anthropic_model: 'claude-sonnet-4-6',
+  ai_provider: 'openai',
   opencrawl_api_url: '',
   opencrawl_api_key: '',
   default_language: 'en',
@@ -27,6 +30,8 @@ export default function SettingsPage() {
   const [providerHealth, setProviderHealth] = useState({});
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [openaiKeyInput, setOpenaiKeyInput] = useState('');
+  const [showClaudeKey, setShowClaudeKey] = useState(false);
+  const [claudeKeyInput, setClaudeKeyInput] = useState('');
   const [showOpenCrawlKey, setShowOpenCrawlKey] = useState(false);
   const [openCrawlKeyInput, setOpenCrawlKeyInput] = useState('');
   const [msg, setMsg] = useState('');
@@ -41,6 +46,7 @@ export default function SettingsPage() {
       });
       setSettings(map);
       setOpenaiKeyInput('');
+      setClaudeKeyInput('');
       setOpenCrawlKeyInput('');
       setProviderHealth(data.provider_health || {});
       setError('');
@@ -102,6 +108,21 @@ export default function SettingsPage() {
     }
   };
 
+  const testClaude = async () => {
+    try {
+      setError('');
+      const data = await apiFetch('/api/settings/test/claude', { method: 'POST' });
+      if (data.ok) {
+        setMsg(`Claude test passed (${data.model})`);
+      } else {
+        setError(data.error || 'Claude test failed');
+      }
+      await load();
+    } catch (err) {
+      setError(String(err.message || err));
+    }
+  };
+
   return (
     <AuthGate>
       <main>
@@ -114,6 +135,9 @@ export default function SettingsPage() {
           <div className="stack">
             <div className={badgeClass(providerHealth?.openai?.status)}>
               OpenAI: {providerHealth?.openai?.status || 'unknown'} ({providerHealth?.openai?.message || 'Not tested yet'})
+            </div>
+            <div className={badgeClass(providerHealth?.claude?.status)}>
+              Claude: {providerHealth?.claude?.status || 'unknown'} ({providerHealth?.claude?.message || 'Not tested yet'})
             </div>
             <div className={badgeClass(providerHealth?.opencrawl?.status)}>
               OpenCrawl: {providerHealth?.opencrawl?.status || 'unknown'} ({providerHealth?.opencrawl?.message || 'Not tested yet'})
@@ -167,6 +191,59 @@ export default function SettingsPage() {
             <button className="secondary" onClick={() => saveKey('openai_model', settings.openai_model)}>Save Model</button>
             <button className="secondary" onClick={() => saveKey('image_model', settings.image_model)}>Save Image Model</button>
             <button onClick={testOpenAI}>Test OpenAI</button>
+          </div>
+        </section>
+
+        <section className="card" style={{ marginBottom: 12 }}>
+          <h3>Claude (Anthropic)</h3>
+          <div className="form-row">
+            <label>
+              API Key
+              <input
+                type={showClaudeKey ? 'text' : 'password'}
+                value={claudeKeyInput}
+                placeholder={settings.anthropic_api_key || 'Enter Anthropic API key (sk-ant-...)'}
+                onChange={(e) => setClaudeKeyInput(e.target.value)}
+              />
+            </label>
+            <label>
+              Model
+              <select
+                value={settings.anthropic_model || 'claude-sonnet-4-6'}
+                onChange={(e) => setSettings({ ...settings, anthropic_model: e.target.value })}
+              >
+                <option value="claude-opus-4-6">claude-opus-4-6 (best quality)</option>
+                <option value="claude-sonnet-4-6">claude-sonnet-4-6 (recommended)</option>
+                <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fastest)</option>
+              </select>
+            </label>
+          </div>
+          <div className="form-row">
+            <label>
+              Active AI Provider
+              <select
+                value={settings.ai_provider || 'openai'}
+                onChange={(e) => setSettings({ ...settings, ai_provider: e.target.value })}
+              >
+                <option value="openai">OpenAI (ChatGPT)</option>
+                <option value="claude">Claude (Anthropic)</option>
+              </select>
+            </label>
+          </div>
+          <div className="stack">
+            <label><input type="checkbox" checked={showClaudeKey} onChange={(e) => setShowClaudeKey(e.target.checked)} /> Show key</label>
+            <button
+              className="secondary"
+              onClick={() => {
+                if (!claudeKeyInput.trim()) { setError('Enter Anthropic API key first.'); return; }
+                saveKey('anthropic_api_key', claudeKeyInput.trim());
+              }}
+            >
+              Save API Key
+            </button>
+            <button className="secondary" onClick={() => saveKey('anthropic_model', settings.anthropic_model)}>Save Model</button>
+            <button className="secondary" onClick={() => saveKey('ai_provider', settings.ai_provider)}>Save Active Provider</button>
+            <button onClick={testClaude}>Test Claude</button>
           </div>
         </section>
 

@@ -84,7 +84,7 @@ function StatusChip({ status }) {
   );
 }
 
-export default function BacklinksFinderPage() {
+export default function BacklinksFinderUI() {
   const [keywords, setKeywords] = useState("");
   const [engine, setEngine] = useState("bing");
   const [maxResults, setMaxResults] = useState(50);
@@ -240,7 +240,7 @@ export default function BacklinksFinderPage() {
   const runError = activeRun?.error_message || activeRun?.summary;
 
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 24px 60px" }}>
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 0 60px" }}>
       <style>{`
         .bf-label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
         .bf-hint { font-size: 12px; color: #6b7280; font-weight: 400; margin-left: 6px; }
@@ -267,12 +267,6 @@ export default function BacklinksFinderPage() {
         .bf-toggle-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; cursor: pointer; user-select: none; }
         .bf-toggle-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer; }
       `}</style>
-
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: "#0f172a" }}>Backlinks Finder</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280" }}>Discover blog/comment opportunities and send them to the queue.</p>
-      </div>
 
       {/* Top Section: Form + Recent Runs */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, marginBottom: 24 }}>

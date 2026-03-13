@@ -549,7 +549,7 @@ async function collectDuckDuckGo(page, query, maxResults, seenUrls) {
   for (let pageNum = 0; pageNum < maxPages; pageNum += 1) {
     if (out.length >= maxResults) break;
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&s=${offset}&kl=uk-en`;
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 12000 });
     await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     const bodyText = await page.locator("body").innerText().catch(() => "");
@@ -603,7 +603,7 @@ async function collectDuckDuckGo(page, query, maxResults, seenUrls) {
     if (!items.length && pageData?.noResult && !triedWebFallback) {
       triedWebFallback = true;
       const webUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&kl=uk-en&ia=web`;
-      await page.goto(webUrl, { waitUntil: "domcontentloaded", timeout: 45000 }).catch(() => {});
+      await page.goto(webUrl, { waitUntil: "domcontentloaded", timeout: 12000 }).catch(() => {});
       await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
       const webItems = await page.evaluate(() => {
         const rows = [];
@@ -656,7 +656,7 @@ async function collectBing(page, query, maxResults, seenUrls) {
   for (const first of pages) {
     if (out.length >= maxResults) break;
     const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}&count=50&first=${first}&setlang=en-US&cc=GB&ensearch=1`;
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     const bodyText = await page.locator("body").innerText().catch(() => "");
@@ -1070,12 +1070,18 @@ async function run() {
             if (keywordLinks.length >= perKeywordLimit) break;
 
             const remaining = perKeywordLimit - keywordLinks.length;
-            const result = await withRetry(async () => {
-              if (currentEngine === "duckduckgo") {
-                return collectDuckDuckGo(page, queryText, remaining, keywordSeen);
-              }
-              return collectBing(page, queryText, remaining, keywordSeen);
-            }, 2, 250);
+            let result;
+            try {
+              result = await withRetry(async () => {
+                if (currentEngine === "duckduckgo") {
+                  return collectDuckDuckGo(page, queryText, remaining, keywordSeen);
+                }
+                return collectBing(page, queryText, remaining, keywordSeen);
+              }, 1, 250);
+            } catch (_engineErr) {
+              // Engine failed (e.g. connection timeout) — try next engine
+              continue;
+            }
 
             if (result.blocked) {
               pendingVerification = true;

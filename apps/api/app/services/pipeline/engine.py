@@ -2303,23 +2303,48 @@ def _cleanup_fallback_tail_spam(html: str) -> str:
 
 
 def _dedupe_internal_link_urls(html: str, candidates: list[dict[str, Any]]) -> str:
+    # Count how many distinct anchors the user provided per URL — that's the allowed max
+    url_anchor_counts: dict[str, int] = {}
+    for row in (candidates or []):
+        url = str(row.get('url') or '').strip().rstrip('/')
+        if url:
+            url_anchor_counts[url] = url_anchor_counts.get(url, 0) + 1
+
     soup = BeautifulSoup(str(html or ''), 'html.parser')
     root = soup.find('article') or soup.body or soup
-    candidate_urls = {
-        str(row.get('url') or '').strip().rstrip('/')
-        for row in (candidates or [])
-        if str(row.get('url') or '').strip()
-    }
-    seen: set[str] = set()
+    counts: dict[str, int] = {}
     for anchor in root.find_all('a'):
         href = str(anchor.get('href') or '').strip().rstrip('/')
-        if not href or href not in candidate_urls:
+        if not href or href not in url_anchor_counts:
             continue
-        if href in seen:
+        allowed = url_anchor_counts[href]
+        if counts.get(href, 0) >= allowed:
             anchor.unwrap()
             continue
-        seen.add(href)
+        counts[href] = counts.get(href, 0) + 1
     return str(soup)
+
+
+def _section_matches_target(section_label: str, target: str) -> bool:
+    s = section_label.lower()
+    t = target.lower()
+    if 'intro' in t or 'opening' in t:
+        return not s or 'intro' in s or 'opening' in s or 'overview' in s
+    if 'feature' in t:
+        return any(k in s for k in ('feature', 'top ', 'best ', 'list', 'what is'))
+    if 'benefit' in t:
+        return any(k in s for k in ('benefit', 'advantage', 'why ', 'value', 'key benefit'))
+    if 'how it works' in t or ('how' in t and 'works' in t):
+        return any(k in s for k in ('how', 'work', 'process', 'workflow', 'step'))
+    if 'comparison' in t or 'table' in t:
+        return any(k in s for k in ('comparison', 'compare', 'versus', 'vs ', 'table', 'decision'))
+    if 'tips' in t or 'best practice' in t:
+        return any(k in s for k in ('tip', 'best practice', 'mistake', 'avoid', 'common'))
+    if 'faq' in t:
+        return any(k in s for k in ('faq', 'question', 'answer'))
+    if 'conclusion' in t or 'cta' in t:
+        return any(k in s for k in ('conclusion', 'cta', 'summary', 'closing', 'final', 'wrap', 'next step', 'get started'))
+    return False
 
 
 def _ensure_internal_links_placement(
@@ -2329,6 +2354,7 @@ def _ensure_internal_links_placement(
     min_links: int,
     max_links: int,
     primary_keyword: str = '',
+    target_sections: list[str] | None = None,
 ) -> str:
     if not html or not candidates:
         return html
@@ -2341,8 +2367,6 @@ def _ensure_internal_links_placement(
         'faq',
         'faqs',
         'faq section',
-        'conclusion',
-        'final recommendations',
     }
 
     insertion_blocks: list[dict[str, Any]] = []
@@ -2368,15 +2392,6 @@ def _ensure_internal_links_placement(
     if not insertion_blocks:
         return str(soup)
 
-    # Count and protect only links already used in main body. Existing links in FAQ/conclusion
-    # should not block contextual placement in section paragraphs.
-    body_existing_hrefs: set[str] = set()
-    for block in insertion_blocks:
-        for a in block['node'].find_all('a'):
-            href = str(a.get('href') or '').strip().rstrip('/')
-            if href:
-                body_existing_hrefs.add(href)
-    existing_hrefs = set(body_existing_hrefs)
     keyword_terms = {
         token
         for token in re.findall(r'[a-z0-9]+', str(primary_keyword or '').lower())
@@ -2384,26 +2399,50 @@ def _ensure_internal_links_placement(
     }
 
     plan: list[dict[str, str]] = []
-    seen_urls: set[str] = set()
+    seen_anchors: set[str] = set()
     for row in candidates:
         url = str(row.get('url') or '').strip()
-        anchor = _sanitize_placeholder_cta_text(str(row.get('anchor') or '')).strip()
+        anchor = _sanitize_placeholder_cta_text(str(row.get('anchor') or row.get('title') or '')).strip()
         if not url or not anchor:
             continue
         if _is_low_quality_anchor_text(anchor):
             continue
-        if keyword_terms:
-            hay = f"{anchor} {url}".lower()
-            if not any(term in hay for term in keyword_terms):
-                # keep candidate, but lower priority later for contextual placement.
-                pass
-        normalized = url.rstrip('/')
-        if normalized in seen_urls:
+        # Deduplicate by anchor text only (same URL with different anchors = distinct links)
+        anchor_key = anchor.lower().strip()
+        if anchor_key in seen_anchors:
             continue
-        seen_urls.add(normalized)
+        seen_anchors.add(anchor_key)
         plan.append({'url': url, 'anchor': anchor})
 
-    already_used = sum(1 for item in plan if item['url'].rstrip('/') in body_existing_hrefs)
+    body_href_counts: dict[str, int] = {}
+    for block in insertion_blocks:
+        for a in block['node'].find_all('a'):
+            href = str(a.get('href') or '').strip().rstrip('/')
+            if href:
+                body_href_counts[href] = body_href_counts.get(href, 0) + 1
+
+    # Assign target sections to plan items (round-robin, skip already-covered sections first)
+    if target_sections:
+        covered_targets: set[str] = set()
+        for block in insertion_blocks:
+            if block['node'].find('a'):
+                sec = str(block.get('section') or '')
+                for ts in target_sections:
+                    if _section_matches_target(sec, ts):
+                        covered_targets.add(ts)
+        uncovered = [ts for ts in target_sections if ts not in covered_targets]
+        all_targets = uncovered + [ts for ts in target_sections if ts in covered_targets]
+        for i, item in enumerate(plan):
+            item['_target_section'] = all_targets[i % len(all_targets)] if all_targets else ''
+
+    # Count actual body instances per unique URL (not multiplied by plan item count)
+    _counted_urls: set[str] = set()
+    already_used = 0
+    for item in plan:
+        normalized = item['url'].rstrip('/')
+        if normalized not in _counted_urls:
+            _counted_urls.add(normalized)
+            already_used += body_href_counts.get(normalized, 0)
     target_count = max(min_links, min(max_links, len(plan)))
     if already_used >= target_count:
         return str(soup)
@@ -2426,9 +2465,6 @@ def _ensure_internal_links_placement(
         }
 
     for item in plan:
-        normalized = item['url'].rstrip('/')
-        if normalized in existing_hrefs:
-            continue
         if already_used + inserted >= target_count:
             break
 
@@ -2461,6 +2497,17 @@ def _ensure_internal_links_placement(
             if section and section in used_sections:
                 score -= 2
 
+            # Strongly prefer user-specified target section for this plan item.
+            item_target = item.get('_target_section', '')
+            if item_target and _section_matches_target(section, item_target):
+                score += 25
+            elif item_target and target_sections:
+                # Penalty if block is in a target section already covered by another item
+                for other_ts in target_sections:
+                    if other_ts != item_target and _section_matches_target(section, other_ts):
+                        score -= 5
+                        break
+
             # Spread links across body; avoid clustering into nearby paragraphs.
             if used_para_indexes:
                 min_gap = min(abs(block_idx - used) for used in used_para_indexes)
@@ -2485,7 +2532,6 @@ def _ensure_internal_links_placement(
         anchor.string = item['anchor']
         target_para.append(anchor)
         target_para.append(soup.new_string("."))
-        existing_hrefs.add(normalized)
         inserted += 1
 
     return str(soup)
@@ -3669,10 +3715,16 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         )
 
     requested_link_cap = max(1, int(runtime.get('internal_links_max') or 8))
-    min_links = min(requested_link_cap, len(candidates)) if candidates else 0
     desired_word_count = int(topic.desired_word_count or 1200)
     density_limit = max(3, desired_word_count // 160)
-    max_links = min(requested_link_cap, density_limit, max(1, len(candidates) or 1))
+    # If user provided explicit anchors, respect their count without density/cap limits
+    _has_custom = candidates and all(str(c.get('type') or '') == 'custom' for c in candidates)
+    if _has_custom:
+        max_links = len(candidates)
+        min_links = len(candidates)
+    else:
+        min_links = min(requested_link_cap, len(candidates)) if candidates else 0
+        max_links = min(requested_link_cap, density_limit, max(1, len(candidates) or 1))
     image_mode = str(payload.get('image_mode') or 'featured_only')
     inline_images_count = int(payload.get('inline_images_count') or 0)
 
@@ -3901,12 +3953,14 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
             ),
         )
 
+    _link_placements = list(payload.get('link_placements') or [])
     html = _ensure_internal_links_placement(
         html,
         internal_link_plan or candidates,
         min_links=max(1, min_links) if (internal_link_plan or candidates) else 0,
         max_links=max(1, max_links) if (internal_link_plan or candidates) else 1,
         primary_keyword=topic.primary_keyword,
+        target_sections=_link_placements or None,
     )
     html = _dedupe_internal_link_urls(html, internal_link_plan or candidates)
     used_internal_links = _extract_used_internal_links(html, internal_link_plan or candidates)
@@ -4068,6 +4122,7 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
         min_links=max(1, min_links) if (internal_link_plan or candidates) else 0,
         max_links=max(1, max_links) if (internal_link_plan or candidates) else 1,
         primary_keyword=topic.primary_keyword,
+        target_sections=_link_placements or None,
     )
     html = _dedupe_internal_link_urls(html, internal_link_plan or candidates)
     html = _sanitize_generated_blog_html(html)
@@ -4079,8 +4134,9 @@ async def stage_draft(db: Session, run: PipelineRun, payload: dict[str, Any]) ->
     if not resolved_meta_title or _is_generic_title(resolved_meta_title):
         resolved_meta_title = title
     resolved_meta_title = _sanitize_misleading_case_study_title(resolved_meta_title, topic.title, html)
-    resolved_slug = str(generation.get('slug') or '').strip()
-    if not resolved_slug or re.search(r'(?i)case-study', resolved_slug):
+    # Always use primary keyword as slug — short, clean, SEO-optimal
+    resolved_slug = slugify(topic.primary_keyword) if topic.primary_keyword else ''
+    if not resolved_slug:
         resolved_slug = slugify(title)
 
     payload['draft'] = {

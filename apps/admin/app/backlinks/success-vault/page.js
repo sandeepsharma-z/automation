@@ -1,6 +1,6 @@
 import AuthGate from '@/components/AuthGate';
 import Header from '@/components/Header';
-import BacklinkOpsFrame from '../ops-frame';
+import SuccessVaultUI from './SuccessVaultUI';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,9 +10,8 @@ export default function BacklinksSuccessVaultPage() {
     <AuthGate>
       <main>
         <Header title="Success Vault" subtitle="All created backlinks in one filterable view." />
-        <BacklinkOpsFrame path="/backlinks/success-vault" title="Backlink Success Vault" compact />
+        <SuccessVaultUI />
       </main>
     </AuthGate>
   );
 }
-

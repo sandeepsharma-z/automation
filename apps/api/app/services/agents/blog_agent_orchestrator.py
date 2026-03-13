@@ -374,19 +374,21 @@ def _cap_tags(tags: list[str], max_items: int = 5) -> list[str]:
 
 
 def _preferred_publish_slug(draft: Draft, topic: Topic | None) -> str:
-    current = str(draft.slug or '').strip()
-    title_slug = slugify(draft.title or '')
     keyword_slug = slugify(topic.primary_keyword) if topic and topic.primary_keyword else ''
-    if current and current != title_slug:
-        return current
     if keyword_slug:
         return keyword_slug
-    return current or title_slug or 'post'
+    current = str(draft.slug or '').strip()
+    return current or slugify(draft.title or '') or 'post'
 
 
 def _synthesize_topic(project: Project, primary_keyword: str, secondary_keywords: list[str], raw_topic: str | None) -> str:
     topic = str(raw_topic or '').strip()
     if topic:
+        # Strip appended extra-instructions before storing as title
+        for marker in ['\n\nExtra instructions:', '\nExtra instructions:']:
+            idx = topic.find(marker)
+            if idx != -1:
+                topic = topic[:idx].strip()
         return topic
 
     primary = primary_keyword.strip()
@@ -494,6 +496,7 @@ def _outline_draft(
     project_id: int,
     topic_id: int,
     topic: str,
+    primary_keyword: str = '',
     brief: dict[str, Any],
     platform: str,
 ) -> Draft:
@@ -502,7 +505,7 @@ def _outline_draft(
         project_id=project_id,
         topic_id=topic_id,
         title=topic,
-        slug=slugify(topic),
+        slug=slugify(primary_keyword or topic),
         outline_json=outline,
         html=f"<article><h1>{topic}</h1><p>Outline generated. Run full generation to create content.</p></article>",
         meta_title=topic,
@@ -583,11 +586,14 @@ async def generate_outline(db: Session, request: dict[str, Any]) -> dict[str, An
     resolved_country = _resolve_country(project, request.get('country'))
     resolved_language = _resolve_language(project, request.get('language'))
 
+    extra_note = str(request.get('extra_instructions') or '').strip()
+    ai_topic = f"{topic_row.title}\n\nExtra instructions: {extra_note}" if extra_note else topic_row.title
+
     payload: dict[str, Any] = {
         'run_id': run.id,
         'project_id': project.id,
         'topic_id': topic_row.id,
-        'topic': topic_row.title,
+        'topic': ai_topic,
         'tone': resolved_tone,
         'country': resolved_country,
         'language': resolved_language,
@@ -617,7 +623,12 @@ async def generate_outline(db: Session, request: dict[str, Any]) -> dict[str, An
     db.commit()
     log_pipeline_event(db, run.id, 'info', 'Outline generated (no draft persisted)', {})
 
-    outline = (payload['brief'].get('h2', []) or []) + (payload['brief'].get('h3', []) or [])
+    _h2_all = payload['brief'].get('h2', []) or []
+    _h3_all = payload['brief'].get('h3', []) or []
+    _CLOSING = {'conclusion', 'faqs', 'faq', 'summary', 'final thoughts', 'wrapping up', 'wrap up'}
+    _h2_content = [h for h in _h2_all if h.strip().lower() not in _CLOSING]
+    _h2_closing = [h for h in _h2_all if h.strip().lower() in _CLOSING]
+    outline = _h2_content + _h3_all + _h2_closing
     return {
         'pipeline_run_id': run.id,
         'draft_id': None,
@@ -627,7 +638,7 @@ async def generate_outline(db: Session, request: dict[str, Any]) -> dict[str, An
         'seo': {
             'meta_title': topic_row.title,
             'meta_description': f"Outline for {topic_row.title}",
-            'slug': slugify(topic_row.title),
+            'slug': slugify(primary_keyword or topic_row.title),
         },
     }
 
@@ -720,11 +731,14 @@ async def generate_full_blog(db: Session, request: dict[str, Any]) -> dict[str, 
     window_n = int(runtime.get('diversity_window_n') or 25)
     structure, intro_style, cta_style = choose_next_structure(db, project.id, window_n=window_n)
 
+    extra_note = str(request.get('extra_instructions') or '').strip()
+    ai_topic = f"{topic_row.title}\n\nExtra instructions: {extra_note}" if extra_note else topic_row.title
+
     payload: dict[str, Any] = {
         'run_id': run.id,
         'project_id': project.id,
         'topic_id': topic_row.id,
-        'topic': topic_row.title,
+        'topic': ai_topic,
         'tone': resolved_tone,
         'country': resolved_country,
         'language': resolved_language,
@@ -736,6 +750,7 @@ async def generate_full_blog(db: Session, request: dict[str, Any]) -> dict[str, 
         'force_cta_style': cta_style,
         'website_url': request.get('website_url') or '',
         'internal_link_anchors': list(request.get('internal_link_anchors') or []),
+        'link_placements': list(request.get('link_placements') or []),
     }
 
     payload = await stage_research(db, run, payload)

@@ -1,15 +1,17 @@
 import AuthGate from '@/components/AuthGate';
 import Header from '@/components/Header';
-import BacklinkOpsFrame from '../ops-frame';
+import StatusTable from '../StatusTable';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default function BacklinksQueuePage() {
   return (
     <AuthGate>
       <main>
         <Header title="Backlinks Queue" subtitle="Queued rows from Backlink Operations sheet." />
-        <BacklinkOpsFrame path="/backlinks/queue" title="Queue Table" />
+        <StatusTable title="Queue" endpoint="/api/backlinks/queue" showRunNow />
       </main>
     </AuthGate>
   );
 }
-

@@ -8,7 +8,9 @@ export async function GET(request) {
     const workflowType = searchParams.get("workflow_type") || searchParams.get("type") || "";
     let rows = await readQueueRows(limit);
     if (workflowType) {
-      rows = rows.filter((r) => String(r.workflow_type || "").toLowerCase() === workflowType.toLowerCase());
+      const normalizeType = (v) => String(v || "").toLowerCase().replace(/[-\s]+/g, "_");
+      const filterType = normalizeType(workflowType);
+      rows = rows.filter((r) => normalizeType(r.workflow_type) === filterType);
     }
     return NextResponse.json({ rows });
   } catch (err) {
