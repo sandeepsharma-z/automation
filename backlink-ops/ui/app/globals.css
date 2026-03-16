@@ -380,6 +380,13 @@ tr:hover td { background: #f5f8ff; }
 
 .run-buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 
+.run-options {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
 .run-headless-toggle {
   display: inline-flex;
   align-items: center;
@@ -391,6 +398,32 @@ tr:hover td { background: #f5f8ff; }
 }
 
 .run-headless-toggle input[type="checkbox"] { width: 16px; height: 16px; }
+
+.run-alert-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.run-voice-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.run-voice-input {
+  min-width: 340px;
+  flex: 1 1 340px;
+}
+
+.pill.pill-live { background: var(--green-light); border-color: #86efac; color: var(--green); }
+.pill.pill-idle { background: var(--surface2); border-color: var(--border-strong); color: var(--muted); }
+
+.run-live-row {
+  margin-top: 8px;
+}
 
 /* ── RESULTS TABLE ── */
 .results-table-wrap { overflow-x: auto; overflow-y: visible; }
@@ -420,7 +453,9 @@ img.preview { max-width: 100%; border: 1px solid var(--border); border-radius: 8
 
 @media (max-width: 900px) {
   .run-controls { align-items: flex-start; flex-direction: column; }
+  .run-options { width: 100%; }
   .run-headless-toggle { margin-left: 0; }
+  .run-voice-input { min-width: 220px; }
   .shell { grid-template-columns: 1fr; }
   .sidebar { height: auto; position: static; }
 }
@@ -540,6 +575,16 @@ img.preview { max-width: 100%; border: 1px solid var(--border); border-radius: 8
   border-radius: var(--radius);
   padding: 16px;
   margin-bottom: 12px;
+}
+
+/* Keep backlink ops intake in a single visible container (no nested cards). */
+.backlinks-ops-card .card {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* ── SHARED FORM / TABLE UTILITIES ── */

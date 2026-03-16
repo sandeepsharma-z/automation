@@ -26,6 +26,15 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (hi - lo + 1)) + lo;
 }
 
+function isTransientContextError(err) {
+  const msg = String(err?.message || err || "").toLowerCase();
+  if (!msg) return false;
+  return msg.includes("execution context was destroyed")
+    || msg.includes("target page, context or browser has been closed")
+    || msg.includes("context has been destroyed")
+    || msg.includes("cannot find context");
+}
+
 class BaseDriver {
   constructor(page, name) {
     this.page = page;
@@ -33,13 +42,35 @@ class BaseDriver {
   }
 
   async goto(url, options = {}) {
-    const res = await this.page.goto(url, options);
-    await waitMs(RELIABILITY_DELAYS.afterNavigationMs);
-    return res;
+    const maxAttempts = Math.max(1, Number(options.maxAttempts || 3));
+    let lastErr = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const res = await this.page.goto(url, options);
+        await waitMs(RELIABILITY_DELAYS.afterNavigationMs);
+        return res;
+      } catch (err) {
+        lastErr = err;
+        if (!isTransientContextError(err) || attempt >= maxAttempts) break;
+        await waitMs(400 * attempt);
+      }
+    }
+    throw lastErr || new Error("Navigation failed");
   }
 
   async evaluate(fn, arg) {
-    return this.page.evaluate(fn, arg);
+    const maxAttempts = 3;
+    let lastErr = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.page.evaluate(fn, arg);
+      } catch (err) {
+        lastErr = err;
+        if (!isTransientContextError(err) || attempt >= maxAttempts) break;
+        await waitMs(200 * attempt);
+      }
+    }
+    throw lastErr || new Error("Evaluate failed");
   }
 
   async queryFirstVisible(selectors = []) {

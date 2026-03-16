@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -95,15 +95,26 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
       if (!("speechSynthesis" in window)) return;
       const text = String(message || "").trim();
       if (!text) return;
+      const synth = window.speechSynthesis;
+      const voices = Array.isArray(synth.getVoices?.()) ? synth.getVoices() : [];
+      const preferredVoice = voices.find((v) => /en-in|hi-in/i.test(String(v?.lang || ""))) || voices[0] || null;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1;
       utterance.pitch = 1;
       utterance.volume = 1;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+      if (preferredVoice) utterance.voice = preferredVoice;
+      synth.resume?.();
+      synth.cancel();
+      synth.speak(utterance);
     } catch (_) {
       // best effort
     }
+  }
+
+  function triggerTestAlert() {
+    const sampleRows = [{ row_key: "test", output: { status_reason: "manual test", status: "pending_verification", run_id: "manual-test" } }];
+    startVerificationAlarm(sampleRows);
+    notifyVerification(sampleRows);
   }
 
   function startVerificationAlarm(rowsList = []) {
@@ -198,6 +209,18 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
   function debugLog(...args) {
     if (!DEBUG_BACKLINK_OPS) return;
     console.log("[backlink-ops]", ...args);
+  }
+
+  async function readJsonSafe(res) {
+    const raw = await res.text().catch(() => "");
+    try {
+      return JSON.parse(raw || "{}");
+    } catch (_) {
+      return {
+        ok: false,
+        error: raw ? `Upstream returned non-JSON response (HTTP ${res.status}).` : `Empty response from server (HTTP ${res.status}).`,
+      };
+    }
   }
 
   function getStorageKey() {
@@ -343,7 +366,7 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ headless }),
       });
-      const data = await res.json();
+      const data = await readJsonSafe(res);
       if (!res.ok) throw new Error(data.error || "Run start failed");
       setRunStatus((prev) => ({
         ...prev,
@@ -366,12 +389,14 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
     setMessage("");
     try {
       const res = await fetch("/api/backlink-ops/run/stop", { method: "POST" });
-      const data = await res.json();
+      const data = await readJsonSafe(res);
       if (!res.ok) throw new Error(data.error || "Stop failed");
       setRunStatus((prev) => ({
         ...prev,
         running: false,
         child_alive: false,
+        session_id: "",
+        started_at: "",
         stop_requested: false,
         current_row_id: "",
       }));
@@ -385,7 +410,7 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
   async function loadRunStatus() {
     try {
       const res = await fetch("/api/backlink-ops/run/status", { cache: "no-store" });
-      const data = await res.json();
+      const data = await readJsonSafe(res);
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Unable to fetch run status");
       setRunStatus({
         running: Boolean(data.running),
@@ -847,12 +872,12 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
   }
 
   return (
-    <section className="card" style={{ overflow: "visible" }}>
+    <section className="card backlinks-ops-card" style={{ overflow: "visible" }}>
       <h2 style={{ marginTop: 0 }}>{title}</h2>
       <div className="muted">Total rows: {count}</div>
       {showRunNow ? (
         <>
-          <div className="card" style={{ marginTop: 12, marginBottom: 12 }}>
+          <div style={{ marginTop: 12, marginBottom: 12 }}>
             <h3 style={{ marginTop: 0 }}>Fill Backlink Details Here</h3>
             <div className="muted" style={{ marginBottom: 10 }}>
               Enter your business profile once. Then paste bulk signup rows below (directory site + target link + credentials).
@@ -968,7 +993,7 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
             </div>
           </div>
 
-          <div className="card" style={{ marginTop: 12, marginBottom: 12 }}>
+          <div style={{ marginTop: 16, marginBottom: 12, paddingTop: 12, borderTop: "1px solid rgba(124, 169, 243, 0.24)" }}>
             <h3 style={{ marginTop: 0 }}>Bulk Backlink Targets Table</h3>
             <div className="muted" style={{ marginBottom: 10 }}>
               Add bulk target rows here. Username/email/password/site defaults upar se auto-fill ho jayenge after Save.
@@ -1060,7 +1085,7 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
             </div>
           </div>
 
-          <div className="card run-panel" style={{ marginTop: 12, marginBottom: 12 }}>
+          <div style={{ marginTop: 16, marginBottom: 12, paddingTop: 12, borderTop: "1px solid rgba(124, 169, 243, 0.24)" }}>
             <h3 className="run-panel-title">Run Backlink Processing</h3>
             <div className="muted run-panel-lead">
               There are currently <strong>{queuedCount}</strong> queued row(s). Running this will start automation and attempt direct submit.
@@ -1114,41 +1139,49 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
                   Refresh
                 </button>
               </div>
-              <div className="row" style={{ gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                <label className="run-headless-toggle">
-                  <input type="checkbox" checked={headless} onChange={(e) => setHeadless(e.target.checked)} />
-                  <span>Headless (hide browser window)</span>
-                </label>
-                <label className="run-headless-toggle">
-                  <input
-                    type="checkbox"
-                    checked={notifyOnVerification}
-                    onChange={(e) => setNotifyOnVerification(Boolean(e.target.checked))}
-                  />
-                  <span>Alert on verification needed</span>
-                </label>
+              <div className="run-options" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 16px" }}>
                 <button
+                  type="button"
                   className="secondary"
-                  onClick={() => notifyVerification([{ row_key: "test", output: { status_reason: "manual test" } }])}
+                  onClick={() => setHeadless((v) => !v)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px" }}
                 >
-                  Test Alert
+                  <span>{headless ? "[x]" : "[ ]"}</span>
+                  <span>Headless (hide browser window)</span>
                 </button>
-                <button className="secondary" onClick={stopVerificationAlarm}>
-                  Stop Voice Alarm
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setNotifyOnVerification((v) => !v)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 12px" }}
+                >
+                  <span>{notifyOnVerification ? "[x]" : "[ ]"}</span>
+                  <span>Alert on verification needed</span>
                 </button>
+                <div className="run-alert-actions" style={{ display: "inline-flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <button className="secondary" onClick={triggerTestAlert}>
+                    Test Alert
+                  </button>
+                  <button className="secondary" onClick={stopVerificationAlarm}>
+                    Stop Voice Alarm
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="row" style={{ marginTop: 8, gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="run-voice-row" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
               <input
-                style={{ minWidth: 340 }}
+                className="run-voice-input"
+                style={{ flex: "1 1 360px", minWidth: 260 }}
                 value={voiceAlertText}
                 onChange={(e) => setVoiceAlertText(e.target.value)}
                 placeholder="Voice message"
               />
-              <span className="pill">{voiceAlarmActive ? "Voice alarm active" : "Voice alarm idle"}</span>
+              <span className={`pill ${voiceAlarmActive ? "pill-live" : "pill-idle"}`}>
+                {voiceAlarmActive ? "Voice alarm active" : "Voice alarm idle"}
+              </span>
             </div>
             {(effectiveRunning || isStarting) ? (
-              <div className="row" style={{ marginTop: 8 }}>
+              <div className="run-live-row">
                 <span className="pill" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                   <span className="spinner" /> Running
                 </span>
@@ -1166,7 +1199,7 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
       )}
 
       {showRunNow ? (
-        <div className="card" style={{ marginTop: 12, marginBottom: 12 }}>
+        <div style={{ marginTop: 16, marginBottom: 12, paddingTop: 12, borderTop: "1px solid rgba(124, 169, 243, 0.24)" }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <h3 style={{ margin: 0 }}>Success Vault (Submitted Comment Links)</h3>
             <button className="secondary" onClick={() => loadSuccessVault()}>
@@ -1227,8 +1260,8 @@ export default function StatusTable({ title, endpoint, showRunNow = false }) {
         </div>
       ) : null}
 
-      {message ? <div className="card">{message}</div> : null}
-      {error ? <div className="card" style={{ color: "#b91c1c" }}>{error}</div> : null}
+      {message ? <div className="muted" style={{ marginTop: 10 }}>{message}</div> : null}
+      {error ? <div style={{ marginTop: 10, color: "#b91c1c" }}>{error}</div> : null}
       {loading ? (
         <div>Loading...</div>
       ) : (

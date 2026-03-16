@@ -391,6 +391,24 @@ function stopAllRunningRows() {
   return touched;
 }
 
+function markRunningResultsFailed(row = {}, reason = "row_failed") {
+  const stamp = nowIso();
+  const rawResults = parseResults(row.results);
+  let changed = false;
+  const nextResults = rawResults.map((item) => {
+    const normalized = normalizeResult(item);
+    if (String(normalized.status || "").toLowerCase() !== "running") return normalized;
+    changed = true;
+    return {
+      ...normalized,
+      status: "failed",
+      status_reason: String(reason || "row_failed"),
+      updated_at: stamp,
+    };
+  });
+  return changed ? nextResults : rawResults;
+}
+
 function getNextQueuedRow() {
   const rows = listLocalRowsRaw();
   return rows.find((row) => RUNNABLE_STATUSES.has(String(row.status || "").toLowerCase())) || null;
@@ -758,7 +776,8 @@ function runSingleRowInChild({ rowKey, headless = true, forceRetry = false, forc
     });
 
     RUN_SESSION.child_pid = Number(child.pid || 0);
-    const timeoutMs = Math.max(120_000, Number(process.env.BACKLINK_ROW_TIMEOUT_MS || 1_800_000));
+    // Keep row timeout practical so stuck automation does not block the whole queue for too long.
+    const timeoutMs = Math.max(90_000, Number(process.env.BACKLINK_ROW_TIMEOUT_MS || 150_000));
     const timeoutHandle = setTimeout(() => {
       try {
         terminatePid(child.pid);
@@ -766,7 +785,7 @@ function runSingleRowInChild({ rowKey, headless = true, forceRetry = false, forc
         // best effort
       }
       RUN_SESSION.child_pid = 0;
-      reject(new Error(`runner timeout after ${timeoutMs}ms`));
+      reject(new Error(`runner timeout after ${timeoutMs}ms; skipped this row and moving to next`));
     }, timeoutMs);
     child.once("error", (err) => {
       clearTimeout(timeoutHandle);
@@ -835,10 +854,14 @@ async function processRunSessionQueue(sessionId) {
       }
     } catch (err) {
       const stopped = RUN_SESSION.stop_requested;
+      const failReason = stopped
+        ? "stopped_by_user"
+        : String(err?.message || err || "row_failed");
       patchLocalRow(rowKey, (row) => ({
         status: stopped ? "queued" : "failed",
-        status_reason: stopped ? "stopped_by_user" : String(err?.message || err || "row_failed"),
+        status_reason: failReason,
         completed_at: stopped ? "" : nowIso(),
+        results: stopped ? parseResults(row.results) : markRunningResultsFailed(row, failReason),
       }));
       if (!stopped) {
         RUN_SESSION.last_error = String(err?.message || err || "");
@@ -854,6 +877,8 @@ async function processRunSessionQueue(sessionId) {
   RUN_SESSION.child_pid = 0;
   RUN_SESSION.current_row_id = "";
   RUN_SESSION.last_error = stoppedByUser ? "Stopped by user" : RUN_SESSION.last_error;
+  RUN_SESSION.session_id = "";
+  RUN_SESSION.started_at = "";
   RUN_SESSION.row_keys = [];
   RUN_SESSION.force_retry = false;
   RUN_SESSION.force = false;
@@ -1001,6 +1026,8 @@ export function startRowRetrySession({ rowKey, headless = false } = {}) {
 export function stopRunSession() {
   reconcileRunSessionState();
   const hadSession = Boolean(RUN_SESSION.running);
+  const stoppedSessionId = RUN_SESSION.session_id || "";
+  const stoppedRowId = RUN_SESSION.current_row_id || "";
   if (RUN_SESSION.running) {
     RUN_SESSION.stop_requested = true;
   }
@@ -1008,11 +1035,20 @@ export function stopRunSession() {
   if (RUN_SESSION.child_pid) {
     terminatePid(RUN_SESSION.child_pid);
   }
+  RUN_SESSION.running = false;
+  RUN_SESSION.stop_requested = false;
+  RUN_SESSION.child_pid = 0;
+  RUN_SESSION.current_row_id = "";
+  RUN_SESSION.session_id = "";
+  RUN_SESSION.started_at = "";
+  RUN_SESSION.row_keys = [];
+  RUN_SESSION.force_retry = false;
+  RUN_SESSION.force = false;
   return {
     ok: true,
     running: false,
-    session_id: RUN_SESSION.session_id,
-    stopped_row_id: RUN_SESSION.current_row_id || "",
+    session_id: stoppedSessionId,
+    stopped_row_id: stoppedRowId,
     stopped_rows: stoppedRows,
     had_session: hadSession,
   };

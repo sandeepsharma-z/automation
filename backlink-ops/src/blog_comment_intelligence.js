@@ -673,13 +673,14 @@ async function discoverCommentForm({ driver, page, targetLink, sourceUrl = "", m
       return best;
     };
     const buildFound = (box, submitNode, confidence) => {
-      const form = box.closest("form") || document.querySelector("form#commentform, #respond form, form[action*='comment' i], form:has(textarea)");
+      const form = box.closest("form") || document.querySelector("form#commentform, #respond form, form[action*='comment' i], form");
       const submit = submitNode || (form
         ? form.querySelector("button[type='submit'], input[type='submit'], button[name*='submit' i], input[name*='submit' i], button, input[value*='comment' i]")
         : document.querySelector("button[type='submit'], input[type='submit']"));
       const name = form?.querySelector("input[name*='author' i], input[name*='name' i], #author") || null;
       const email = form?.querySelector("input[type='email'], input[name*='email' i], #email") || null;
       const website = form?.querySelector("input[name='url'], input[name*='website' i], input[name*='site' i], #url") || null;
+      const phone = form?.querySelector("input[type='tel'], input[name*='phone' i], input[name*='mobile' i], input[id*='phone' i], input[id*='mobile' i]") || null;
       const html = String(document.documentElement?.outerHTML || "").toLowerCase();
       const cms = html.includes("wp-comments-post") || html.includes("commentform") || html.includes("id=\"respond\"")
         ? "wordpress"
@@ -691,11 +692,12 @@ async function discoverCommentForm({ driver, page, targetLink, sourceUrl = "", m
       return {
         found: true,
         reason: "",
-        comment_box_selector: css(box, "textarea"),
+        comment_box_selector: css(box, "textarea, [contenteditable='true'], [role='textbox']"),
         submit_selector: css(submit, "button[type='submit'], input[type='submit']"),
         name_selector: css(name, "input[name*='author' i], input[name*='name' i]"),
         email_selector: css(email, "input[type='email'], input[name*='email' i]"),
         website_selector: css(website, "input[name='url'], input[name*='website' i]"),
+        phone_selector: css(phone, "input[type='tel'], input[name*='phone' i], input[name*='mobile' i]"),
         form_selector: css(form, "form"),
         cms_type_guess: cms,
         confidence_score: Math.min(100, Math.max(0, Number(confidence || 0))),
@@ -709,6 +711,15 @@ async function discoverCommentForm({ driver, page, targetLink, sourceUrl = "", m
       "#commentform textarea",
       ".comment-form textarea",
       "form:has(textarea):has(button[type='submit']) textarea",
+      "textarea[placeholder*='comment' i]",
+      "textarea[aria-label*='comment' i]",
+      "[contenteditable='true'][aria-label*='comment' i]",
+      "[contenteditable='true'][placeholder*='comment' i]",
+      "[role='textbox'][aria-label*='comment' i]",
+      "input[name*='comment' i]:not([type='hidden'])",
+      "input[placeholder*='comment' i]:not([type='hidden'])",
+      "input[name*='message' i]:not([type='hidden'])",
+      "input[placeholder*='message' i]:not([type='hidden'])",
     ];
     for (const sel of directSelectors) {
       const nodes = Array.from(document.querySelectorAll(sel)).filter((n) => isVisible(n));
@@ -744,11 +755,29 @@ async function discoverCommentForm({ driver, page, targetLink, sourceUrl = "", m
       return { found: false, reason: "access_required", cms: "blogspot" };
     }
 
-    // Step 4: HTML/context keyword search around textarea.
+    // Step 4: HTML/context keyword search around comment-capable editor controls.
     const html = String(document.documentElement?.outerHTML || "").toLowerCase();
     if (/(comment|reply|submit)/.test(html)) {
-      const textareas = Array.from(document.querySelectorAll("textarea")).filter((t) => isVisible(t));
-      for (const box of textareas) {
+      const editors = Array.from(document.querySelectorAll("textarea, [contenteditable='true'], [role='textbox'], input:not([type='hidden'])"))
+        .filter((el) => isVisible(el))
+        .filter((el) => {
+          const tag = String(el.tagName || "").toLowerCase();
+          if (tag === "textarea") return true;
+          if (el.isContentEditable) return true;
+          const role = String(el.getAttribute("role") || "").toLowerCase();
+          if (role === "textbox") return true;
+          const type = String(el.getAttribute("type") || "text").toLowerCase();
+          if (!["text", "search", ""].includes(type)) return false;
+          const hint = [
+            el.getAttribute("name") || "",
+            el.getAttribute("id") || "",
+            el.getAttribute("placeholder") || "",
+            el.getAttribute("aria-label") || "",
+            el.getAttribute("title") || "",
+          ].join(" ").toLowerCase();
+          return /(comment|message|feedback|review|reply|description)/.test(hint);
+        });
+      for (const box of editors) {
         const container = box.closest("form, article, section, .comment-form, #respond, .comments") || box.parentElement;
         const ctx = String(container?.innerText || "").toLowerCase();
         if (!/(comment|reply|submit)/.test(ctx)) continue;
@@ -757,19 +786,36 @@ async function discoverCommentForm({ driver, page, targetLink, sourceUrl = "", m
       }
     }
 
-    // Step 5: final broad textarea scoring.
-    const allTextareas = Array.from(document.querySelectorAll("textarea")).filter((t) => isVisible(t));
+    // Step 5: final broad editor scoring.
+    const allTextareas = Array.from(document.querySelectorAll("textarea, [contenteditable='true'], [role='textbox'], input:not([type='hidden'])"))
+      .filter((t) => isVisible(t))
+      .filter((el) => {
+        const tag = String(el.tagName || "").toLowerCase();
+        if (tag === "textarea") return true;
+        if (el.isContentEditable) return true;
+        const role = String(el.getAttribute("role") || "").toLowerCase();
+        if (role === "textbox") return true;
+        const type = String(el.getAttribute("type") || "text").toLowerCase();
+        return ["text", "search", ""].includes(type);
+      });
     let best = null;
     for (const box of allTextareas) {
       const form = box.closest("form");
       const ph = String(box.getAttribute("placeholder") || "").toLowerCase();
+      const hint = [
+        box.getAttribute("name") || "",
+        box.getAttribute("id") || "",
+        box.getAttribute("aria-label") || "",
+        box.getAttribute("title") || "",
+      ].join(" ").toLowerCase();
       const formText = String(form?.innerText || box.closest("section,article,div")?.innerText || "").toLowerCase();
       const submitHit = nearSubmit(box);
       let score = 0;
       if (/(comment|message)/.test(ph)) score += 35;
+      if (/(comment|message|feedback|review|reply|description)/.test(hint)) score += 30;
       if (/(comment|reply|post)/.test(formText)) score += 25;
       if (submitHit?.distance != null && submitHit.distance < 200) score += 35;
-      if (box.id === "comment" || String(box.getAttribute("name") || "").toLowerCase().includes("comment")) score += 30;
+      if (box.id === "comment" || hint.includes("comment")) score += 30;
       if (!best || score > best.score) best = { box, submit: submitHit?.node || null, score };
     }
     if (best && best.score >= 30) {
@@ -843,7 +889,9 @@ async function discoverCommentForm({ driver, page, targetLink, sourceUrl = "", m
     }
 
     const hasIframeComment = await frame.evaluate(() => {
-      return Boolean(document.querySelector("form#commentform, textarea#comment, textarea[name='comment'], textarea[name*='comment' i], [contenteditable='true'][aria-label*='comment' i]"));
+      return Boolean(document.querySelector(
+        "form#commentform, textarea#comment, textarea[name='comment'], textarea[name*='comment' i], textarea[placeholder*='comment' i], [contenteditable='true'], [role='textbox'][aria-label*='comment' i], input[name*='comment' i], input[placeholder*='comment' i]"
+      ));
     }).catch(() => false);
     if (hasIframeComment) {
       return { found: false, reason: "iframe_comment_form", scroll_steps: 0, cms_type_guess: "unknown", confidence_score: 0 };
@@ -990,6 +1038,7 @@ export async function runAdaptiveBlogCommenting({
   const verificationPollMs = Math.max(1500, Number(process.env.BLOG_COMMENT_VERIFICATION_POLL_MS || 5000));
   const forceManualApproval = String(process.env.BLOG_COMMENT_FORCE_MANUAL_APPROVAL || "0").trim() === "1";
   const prefillOnly = String(process.env.BLOG_COMMENT_PREFILL_ONLY || "0").trim() === "1";
+  const autoApproveSubmit = String(process.env.AUTO_APPROVE_SUBMIT || "1").trim() === "1";
   const skipDuplicateBlock = String(process.env.BLOG_COMMENT_SKIP_DUPLICATE_BLOCK || "0").trim() === "1";
 
   const forceFieldValue = async (selector, value) => {
@@ -1000,8 +1049,17 @@ export async function runAdaptiveBlogCommenting({
       if (!el) return false;
       const tag = String(el.tagName || "").toLowerCase();
       if (tag === "textarea" || tag === "input") {
+        try { el.removeAttribute("readonly"); } catch (_) {}
+        try { el.removeAttribute("disabled"); } catch (_) {}
         el.focus();
-        el.value = v;
+        try {
+          const proto = tag === "input" ? window.HTMLInputElement.prototype : window.HTMLTextAreaElement.prototype;
+          const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+          if (setter) setter.call(el, v);
+          else el.value = v;
+        } catch (_) {
+          el.value = v;
+        }
         el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
         el.dispatchEvent(new Event("blur", { bubbles: true }));
@@ -1017,6 +1075,432 @@ export async function runAdaptiveBlogCommenting({
       }
       return false;
     }, { sel: selector, v: val }).catch(() => false);
+  };
+
+  const forceFillCommentEverywhere = async (commentText = "") => {
+    const text = String(commentText || "").trim();
+    if (!text) return false;
+    return driver.evaluate((value) => {
+      const isVisible = (el) => {
+        if (!el) return false;
+        const s = window.getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        return s.display !== "none" && s.visibility !== "hidden" && r.width > 8 && r.height > 8;
+      };
+      const hintFor = (el) => [
+        el.getAttribute("name") || "",
+        el.getAttribute("id") || "",
+        el.getAttribute("placeholder") || "",
+        el.getAttribute("aria-label") || "",
+        el.getAttribute("title") || "",
+        String(el.closest("label")?.textContent || ""),
+      ].join(" ").toLowerCase();
+      const setValue = (el) => {
+        const tag = String(el.tagName || "").toLowerCase();
+        try { el.removeAttribute("readonly"); } catch (_) {}
+        try { el.removeAttribute("disabled"); } catch (_) {}
+        if (tag === "textarea" || tag === "input") {
+          try {
+            const proto = tag === "input" ? window.HTMLInputElement.prototype : window.HTMLTextAreaElement.prototype;
+            const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+            if (setter) setter.call(el, value);
+            else el.value = value;
+          } catch (_) {
+            el.value = value;
+          }
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          return String(el.value || "").trim().length > 0;
+        }
+        if (el.isContentEditable || String(el.getAttribute("role") || "").toLowerCase() === "textbox") {
+          el.textContent = value;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          return String(el.textContent || "").trim().length > 0;
+        }
+        return false;
+      };
+
+      const direct = Array.from(document.querySelectorAll(
+        "textarea[placeholder*='comment' i], textarea[aria-label*='comment' i], textarea[name*='comment' i], textarea, [contenteditable='true'], [role='textbox']"
+      )).filter((el) => isVisible(el));
+      for (const el of direct) {
+        const hint = hintFor(el);
+        const tag = String(el.tagName || "").toLowerCase();
+        if (tag === "textarea" || el.isContentEditable || String(el.getAttribute("role") || "").toLowerCase() === "textbox" || /(comment|message|reply|feedback|description)/.test(hint)) {
+          if (setValue(el)) return true;
+        }
+      }
+
+      // fallback: largest visible textarea-like editor on page
+      const all = Array.from(document.querySelectorAll("textarea, [contenteditable='true'], [role='textbox'], input[type='text'], input[type='search']"))
+        .filter((el) => isVisible(el))
+        .map((el) => ({ el, area: (el.getBoundingClientRect().width * el.getBoundingClientRect().height) }))
+        .sort((a, b) => b.area - a.area);
+      for (const it of all) {
+        if (setValue(it.el)) return true;
+      }
+      return false;
+    }, text).catch(() => false);
+  };
+
+  const buildProfilePayload = (commentText = "") => {
+    const isEmailAddr = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ""));
+    const username = String(row.username || "").trim();
+    const phoneFallback = String(row.company_phone || "").trim();
+    const emailFallback = String(row.email || "").trim()
+      || (isEmailAddr(username) ? username : "");
+    const nameFallback = String((!isEmailAddr(username) && username) || row.company_name || "").trim();
+    return {
+      comment: String(commentText || "").trim(),
+      name: nameFallback,
+      email: emailFallback,
+      website: String(row.default_website_url || "").trim(),
+      password: String(row.password || "").trim(),
+      phone: phoneFallback,
+      company_name: String(row.company_name || "").trim(),
+      company_address: String(row.company_address || "").trim(),
+    };
+  };
+
+  const genericFormFill = async (payload) => {
+    return driver.evaluate((data) => {
+      const isVisible = (el) => {
+        if (!el) return false;
+        const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 4 && rect.height > 4;
+      };
+      const isDisabled = (el) => Boolean(el.disabled) || String(el.getAttribute("aria-disabled") || "").toLowerCase() === "true";
+      const isReadOnly = (el) => Boolean(el.readOnly) || String(el.getAttribute("readonly") || "").toLowerCase() === "true";
+      const labelTextFor = (el) => {
+        const id = el.getAttribute("id");
+        if (!id) return "";
+        const label = document.querySelector(`label[for="${id}"]`);
+        return String(label?.textContent || "").toLowerCase();
+      };
+      const textFor = (el) => String(el?.textContent || el?.getAttribute?.("value") || "").toLowerCase();
+      const hintFor = (el) => [
+        el.getAttribute("name") || "",
+        el.getAttribute("id") || "",
+        el.getAttribute("placeholder") || "",
+        el.getAttribute("aria-label") || "",
+        el.getAttribute("title") || "",
+        labelTextFor(el),
+      ].join(" ").toLowerCase();
+      const looksHoneypot = (el) => {
+        const hint = hintFor(el);
+        if (/(honeypot|trap|bot|captcha|token|csrf|nonce)/.test(hint)) return true;
+        const style = window.getComputedStyle(el);
+        return style.opacity === "0" || style.pointerEvents === "none";
+      };
+      const setNativeValue = (el, value) => {
+        const tag = String(el.tagName || "").toLowerCase();
+        if (tag === "input" || tag === "textarea") {
+          const proto = tag === "input" ? window.HTMLInputElement.prototype : window.HTMLTextAreaElement.prototype;
+          const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+          if (setter) setter.call(el, value);
+          else el.value = value;
+          return true;
+        }
+        return false;
+      };
+      const setVal = (el, value) => {
+        const v = String(value || "").trim();
+        if (!v) return false;
+        const tag = String(el.tagName || "").toLowerCase();
+        if (tag === "textarea" || tag === "input" || tag === "select") {
+          el.focus();
+          if (tag === "select") {
+            const opts = Array.from(el.options || []);
+            const match = opts.find((o) => String(o.value || "").trim() === v || String(o.textContent || "").trim() === v);
+            if (match) {
+              el.value = String(match.value || "");
+            } else {
+              const firstNonEmpty = opts.find((o) => {
+                const txt = String(o.textContent || "").toLowerCase().trim();
+                const val = String(o.value || "").trim();
+                if (!val) return false;
+                return !/(select|choose|pick|--|option)/.test(txt);
+              }) || opts.find((o) => String(o.value || "").trim()) || opts[0];
+              if (firstNonEmpty) el.value = String(firstNonEmpty.value || "");
+            }
+          } else {
+            setNativeValue(el, v);
+          }
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          el.dispatchEvent(new Event("blur", { bubbles: true }));
+          return true;
+        }
+        if (el.isContentEditable) {
+          el.focus();
+          el.textContent = v;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          el.dispatchEvent(new Event("blur", { bubbles: true }));
+          return true;
+        }
+        return false;
+      };
+
+      const getForms = () => {
+        const forms = Array.from(document.querySelectorAll("form"));
+        const synthetic = Array.from(document.querySelectorAll("[role='form'], .comment-form, .contact-form, .form, section, article"))
+          .filter((el) => {
+            if (!isVisible(el)) return false;
+            const inputs = el.querySelectorAll("input, textarea, select, [contenteditable='true']");
+            return inputs.length >= 2;
+          });
+        const uniq = [];
+        for (const el of [...forms, ...synthetic]) {
+          if (!uniq.includes(el)) uniq.push(el);
+        }
+        return uniq;
+      };
+      const scoreForm = (container) => {
+        const txt = `${textFor(container)} ${container?.getAttribute?.("id") || ""} ${container?.getAttribute?.("class") || ""}`.toLowerCase();
+        let score = 0;
+        if (/(comment|reply|feedback|review|contact|message)/.test(txt)) score += 40;
+        const fields = container.querySelectorAll("input, textarea, select, [contenteditable='true']");
+        const submitBtns = container.querySelectorAll("button, input[type='submit'], [role='button']");
+        score += Math.min(30, fields.length * 3);
+        score += Math.min(20, submitBtns.length * 5);
+        return score;
+      };
+      const pickContainer = () => {
+        const forms = getForms();
+        if (!forms.length) return document;
+        let best = forms[0];
+        let bestScore = scoreForm(best);
+        for (const f of forms.slice(1)) {
+          const s = scoreForm(f);
+          if (s > bestScore) {
+            best = f;
+            bestScore = s;
+          }
+        }
+        return best;
+      };
+      const container = pickContainer();
+      const fieldSelector = "input, textarea, select, [contenteditable='true']";
+      const fields = Array.from(container.querySelectorAll(fieldSelector))
+        .filter((el) => isVisible(el) && !isDisabled(el) && !isReadOnly(el) && !looksHoneypot(el));
+
+      let filled = 0;
+      let checked = 0;
+      const radioDone = new Set();
+      for (const el of fields) {
+        const tag = String(el.tagName || "").toLowerCase();
+        const type = String(el.getAttribute("type") || "").toLowerCase();
+        const hint = hintFor(el);
+
+        if (type === "hidden" || type === "file" || type === "image" || type === "color" || type === "range") continue;
+        if (type === "checkbox") {
+          if (!el.checked) {
+            el.click();
+            checked += 1;
+          }
+          continue;
+        }
+        if (type === "radio") {
+          const key = String(el.getAttribute("name") || "");
+          if (!radioDone.has(key) && !el.checked) {
+            el.click();
+            radioDone.add(key);
+            checked += 1;
+          }
+          continue;
+        }
+
+        let value = "";
+        if (type === "email" || hint.includes("email")) value = data.email;
+        else if (type === "url" || hint.includes("website") || hint.includes("url") || hint.includes("site")) value = data.website;
+        else if (type === "password" || hint.includes("password")) value = data.password;
+        else if (type === "tel" || hint.includes("phone") || hint.includes("mobile")) value = data.phone;
+        else if (type === "number" && (hint.includes("phone") || hint.includes("mobile") || hint.includes("tel"))) value = data.phone;
+        else if (hint.includes("address")) value = data.company_address;
+        else if (hint.includes("company") || hint.includes("business") || hint.includes("organization")) value = data.company_name;
+        else if (hint.includes("name") || hint.includes("author")) value = data.name;
+        else if (hint.includes("comment") || hint.includes("message") || hint.includes("description") || hint.includes("content") || hint.includes("body")) value = data.comment;
+        else if (tag === "textarea" || el.isContentEditable) value = data.comment;
+        else if (type === "search" || type === "text" || type === "number" || !type) value = data.company_name || data.name || String(data.comment || "").slice(0, 140);
+
+        if (setVal(el, value)) filled += 1;
+      }
+
+      const roleBoxes = Array.from(container.querySelectorAll("[role='checkbox']")).filter((el) => isVisible(el) && !isDisabled(el));
+      for (const box of roleBoxes) {
+        const checkedState = String(box.getAttribute("aria-checked") || "").toLowerCase();
+        if (checkedState !== "true") {
+          box.click();
+          checked += 1;
+        }
+      }
+
+      const submitLike = Array.from(container.querySelectorAll("button, input[type='submit'], input[type='button'], [role='button'], a"))
+        .filter((el) => isVisible(el) && !isDisabled(el))
+        .map((el) => {
+          const txt = `${textFor(el)} ${el.getAttribute("aria-label") || ""}`.toLowerCase();
+          let score = 0;
+          if (String(el.getAttribute("type") || "").toLowerCase() === "submit") score += 10;
+          if (/(submit|post|send|reply|comment|publish|save)/.test(txt)) score += 20;
+          if (/(cancel|reset|close|back)/.test(txt)) score -= 20;
+          return { el, score };
+        })
+        .sort((a, b) => b.score - a.score);
+      const selectorFor = (el) => {
+        if (!el) return "";
+        if (el.id) return `#${el.id}`;
+        const name = String(el.getAttribute("name") || "").trim();
+        const type = String(el.getAttribute("type") || "").trim();
+        const tag = String(el.tagName || "").toLowerCase();
+        if (name) return `${tag}[name="${name}"]`;
+        if (type) return `${tag}[type="${type}"]`;
+        return tag || "";
+      };
+      const submitCandidates = submitLike.slice(0, 4).map((row) => selectorFor(row.el)).filter(Boolean);
+      const submitSelector = submitCandidates[0] || "button[type='submit'], input[type='submit']";
+
+      const requiredFields = fields.filter((el) => {
+        const required = el.hasAttribute("required") || String(el.getAttribute("aria-required") || "").toLowerCase() === "true";
+        if (!required) return false;
+        const tag = String(el.tagName || "").toLowerCase();
+        if (tag === "select") return String(el.value || "").trim().length > 0;
+        if (el.isContentEditable) return String(el.textContent || "").trim().length > 0;
+        return String(el.value || "").trim().length > 0;
+      }).length;
+
+      return {
+        ok: filled > 0 || checked > 0,
+        filled_count: filled,
+        checked_count: checked,
+        required_filled_count: requiredFields,
+        container_tag: String(container?.tagName || "").toLowerCase(),
+        submit_selector: submitSelector,
+        submit_candidates: submitCandidates,
+      };
+    }, payload).catch(() => ({
+      ok: false,
+      filled_count: 0,
+      checked_count: 0,
+      required_filled_count: 0,
+      container_tag: "",
+      submit_selector: "button[type='submit'], input[type='submit']",
+      submit_candidates: [],
+    }));
+  };
+
+  const tryGenericFallbackFlow = async ({ reason = "generic_fallback", commentText = "", facts = null }) => {
+    const payload = buildProfilePayload(commentText);
+    const filled = await genericFormFill(payload);
+    if (!filled?.ok) return null;
+
+    logDebugState(logger, {
+      rowKey,
+      siteName,
+      state: "form_filled_generic",
+      selector: filled.submit_selector,
+      actionTaken: "fill_any_visible_form_fields",
+      result: "success",
+      note: `${reason}; filled=${Number(filled.filled_count || 0)}; checked=${Number(filled.checked_count || 0)}; required=${Number(filled.required_filled_count || 0)}; container=${String(filled.container_tag || "unknown")}`,
+    });
+    logger?.log?.({
+      row_key: rowKey,
+      site_name: siteName,
+      action: "adaptive_stage",
+      status: "ok",
+      error_message: `generic_fallback_prefilled reason=${reason}`,
+    });
+
+    const approval = autoApproveSubmit
+      ? { approved: true, screenshotPath: "", htmlPath: "" }
+      : await requestHumanApproval({
+          page,
+          runDir,
+          runId,
+          siteSlug,
+          siteName,
+          rowKey,
+          mode: approvalMode,
+          artifactNameBase: "pre_submit_generic",
+          forceManual: forceManualApproval,
+          prefillOnly,
+          requestPayload: {
+            status: "ready_to_submit",
+            driver_used: driver.name,
+            fallback_used: true,
+            reason,
+            detected_fields: {
+              submit_selector: filled.submit_selector,
+              submit_candidates: Array.isArray(filled.submit_candidates) ? filled.submit_candidates.slice(0, 4) : [],
+            },
+            page_facts: facts ? {
+              title: facts.title,
+              headings: facts.headings?.slice?.(0, 4) || [],
+              key_sentences: facts.key_sentences?.slice?.(0, 4) || [],
+            } : {},
+          },
+        });
+
+    if (!approval.approved) {
+      return {
+        status: "skipped",
+        status_reason: "Operator declined submit at generic fallback checkpoint.",
+        created_link: "",
+        result_title: "",
+        artifacts: [approval.screenshotPath, approval.htmlPath].filter(Boolean),
+      };
+    }
+
+    const beforeSubmitUrl = String(page.url() || "");
+    const submitCandidates = [
+      String(filled.submit_selector || "").trim(),
+      ...(Array.isArray(filled.submit_candidates) ? filled.submit_candidates : []),
+      "button[type='submit']",
+      "input[type='submit']",
+      "button:not([type])",
+      "[role='button']",
+    ].map((s) => String(s || "").trim()).filter(Boolean);
+    const uniqSubmitCandidates = [...new Set(submitCandidates)];
+    let post = await detectPostSignals(driver);
+    for (const submitSel of uniqSubmitCandidates) {
+      if (post?.success || post?.moderation || post?.hasCommentAnchor || post?.hasCaptcha || post?.isBlocked) break;
+      const clicked = await driver.click(submitSel, {
+        timeout: 12000,
+        maxAttempts: 2,
+        verifyUrlChangedFrom: beforeSubmitUrl,
+        verifyAppearSelector: "body",
+      }).catch(() => false);
+      if (!clicked) continue;
+      await sleep(2200);
+      post = await detectPostSignals(driver);
+    }
+    const artifacts = await captureArtifacts({
+      page,
+      siteDir,
+      baseName: "post_submit_generic",
+      rowKey,
+      siteName,
+      action: "post_submit_state",
+      status: post?.isBlocked ? "blocked" : (post?.hasCaptcha ? "pending_verification" : "submitted"),
+      errorMessage: `generic_fallback_submit reason=${reason}`,
+      targetLink,
+    });
+
+    if (post?.hasCaptcha) {
+      return { status: "pending_verification", status_reason: "captcha_gate", created_link: "", result_title: "", artifacts };
+    }
+    if (post?.isBlocked) {
+      return { status: "blocked", status_reason: "blocked_by_site", created_link: "", result_title: "", artifacts };
+    }
+    return {
+      status: "submitted_pending_moderation",
+      status_reason: `Generic form submit attempted (${reason}).`,
+      created_link: "",
+      result_title: "",
+      artifacts,
+    };
   };
 
   const ensureCheckboxTicked = async () => {
@@ -1076,7 +1560,7 @@ export async function runAdaptiveBlogCommenting({
       const inputs = Array.from(document.querySelectorAll("input, textarea")).filter((el) => {
         if (el.tagName.toLowerCase() === "textarea") return true;
         const type = String(el.getAttribute("type") || "text").toLowerCase();
-        return ["text", "email", "url"].includes(type);
+        return ["text", "email", "url", "tel", "number"].includes(type);
       }).filter(isVisible);
       const score = (el, patterns) => {
         const hay = [
@@ -1100,6 +1584,7 @@ export async function runAdaptiveBlogCommenting({
       const emailPatterns = ["email", "e-mail"];
       const namePatterns = ["name", "author", "full name", "your name"];
       const websitePatterns = ["website", "url", "site", "web"];
+      const phonePatterns = ["phone", "mobile", "whatsapp", "contact number", "telephone", "tel"];
 
       const ranked = (patterns) => inputs
         .map((el) => ({ el, score: score(el, patterns) }))
@@ -1108,12 +1593,13 @@ export async function runAdaptiveBlogCommenting({
 
       const emailEl = ranked(emailPatterns)[0]?.el || inputs.find((el) => String(el.getAttribute("type") || "").toLowerCase() === "email") || null;
       const websiteEl = ranked(websitePatterns)[0]?.el || inputs.find((el) => String(el.getAttribute("type") || "").toLowerCase() === "url") || null;
+      const phoneEl = ranked(phonePatterns)[0]?.el || inputs.find((el) => ["tel", "number"].includes(String(el.getAttribute("type") || "").toLowerCase())) || null;
       let nameEl = ranked(namePatterns)[0]?.el || null;
       if (!nameEl) {
         nameEl = inputs.find((el) => {
           const type = String(el.getAttribute("type") || "text").toLowerCase();
-          if (type !== "text") return false;
-          if (el === emailEl || el === websiteEl) return false;
+          if (!["text", "tel", "number"].includes(type)) return false;
+          if (el === emailEl || el === websiteEl || el === phoneEl) return false;
           return true;
         }) || null;
       }
@@ -1122,8 +1608,9 @@ export async function runAdaptiveBlogCommenting({
         email: pickSelector(emailEl),
         name: pickSelector(nameEl),
         website: pickSelector(websiteEl),
+        phone: pickSelector(phoneEl),
       };
-    }).catch(() => ({ email: "", name: "", website: "" }));
+    }).catch(() => ({ email: "", name: "", website: "", phone: "" }));
   };
   const siteDir = path.join(runDir, runId, siteSlug);
   const sourceUrl = extractPrimaryUrl(row?.directory_url || row?.site_url || "");
@@ -1243,6 +1730,14 @@ export async function runAdaptiveBlogCommenting({
     const reason = String(detection?.reason || "");
     const isCaptchaGate = reason === "captcha_gate";
     const isAccessRequired = ["auth_required", "access_required"].includes(reason);
+    if (!isCaptchaGate && !isAccessRequired) {
+      const fallbackResult = await tryGenericFallbackFlow({
+        reason: `form_not_found:${reason || "no_form_detected"}`,
+        commentText: String(row.company_description || row.notes || "").slice(0, 500),
+        facts: null,
+      });
+      if (fallbackResult) return fallbackResult;
+    }
     const status = isCaptchaGate
       ? "pending_verification"
       : isAccessRequired
@@ -1282,6 +1777,7 @@ export async function runAdaptiveBlogCommenting({
     name_selector: String(target?.selectors?.name || detection.name_selector || "input[name*='author' i], input[name*='name' i]").trim(),
     email_selector: String(target?.selectors?.email || detection.email_selector || "input[type='email'], input[name*='email' i]").trim(),
     website_selector: String(target?.selectors?.website || target?.selectors?.target_link || detection.website_selector || "input[name='url'], input[name*='website' i]").trim(),
+    phone_selector: String(target?.selectors?.phone || target?.selectors?.mobile || detection.phone_selector || "input[type='tel'], input[name*='phone' i], input[name*='mobile' i]").trim(),
     form_selector: String(target?.selectors?.form || detection.form_selector || "form").trim(),
   };
 
@@ -1302,6 +1798,7 @@ export async function runAdaptiveBlogCommenting({
       if (h === "email") return type === "email" || hay.includes("email");
       if (h === "website") return type === "url" || hay.includes("website") || hay.includes("url");
       if (h === "name") return hay.includes("name") || hay.includes("author");
+      if (h === "phone") return type === "tel" || type === "number" || hay.includes("phone") || hay.includes("mobile") || hay.includes("whatsapp") || hay.includes("contact");
       return false;
     }, { sel: selector, h: hint }).catch(() => false);
   };
@@ -1316,9 +1813,19 @@ export async function runAdaptiveBlogCommenting({
   if (autoMap?.website && (!(await driver.exists(mapped.website_selector)) || !(await selectorLooksLike(mapped.website_selector, "website")))) {
     mapped.website_selector = autoMap.website;
   }
+  if (autoMap?.phone && (!(await driver.exists(mapped.phone_selector)) || !(await selectorLooksLike(mapped.phone_selector, "phone")))) {
+    mapped.phone_selector = autoMap.phone;
+  }
 
   const readyBox = await enforceFormVisible(driver, mapped.comment_box_selector);
   if (!readyBox) {
+    const fallbackResult = await tryGenericFallbackFlow({
+      reason: "comment_box_not_visible",
+      commentText: String(row.company_description || row.notes || "").slice(0, 500),
+      facts: null,
+    });
+    if (fallbackResult) return fallbackResult;
+
     const artifacts = await captureArtifacts({
       page,
       siteDir,
@@ -1366,8 +1873,9 @@ export async function runAdaptiveBlogCommenting({
     };
   }
 
-  const bestDomain = bestSimilarityAgainst(domainEntries, selected);
-  const bestGlobal = bestSimilarityAgainst(globalEntries, selected);
+  const selectedClamped = String(selected || "").slice(0, 420);
+  const bestDomain = bestSimilarityAgainst(domainEntries, selectedClamped);
+  const bestGlobal = bestSimilarityAgainst(globalEntries, selectedClamped);
   const uniqueness = uniquenessStatusLine(bestDomain, bestGlobal, domainEntries.length);
 
   if (scrollBeforeType) {
@@ -1375,8 +1883,51 @@ export async function runAdaptiveBlogCommenting({
     await sleep(100 + Math.floor(Math.random() * 180));
   }
 
-  await driver.type(mapped.comment_box_selector, selected, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
-  await forceFieldValue(mapped.comment_box_selector, selected);
+  const profilePayload = buildProfilePayload(selectedClamped);
+  const nameVal = String(profilePayload.name || "").trim();
+  const emailVal = String(profilePayload.email || "").trim();
+  const websiteVal = String(profilePayload.website || "").trim();
+  const phoneVal = String(profilePayload.phone || "").trim();
+  if (!emailVal || !phoneVal) {
+    const artifacts = await captureArtifacts({
+      page,
+      siteDir,
+      baseName: "comment_missing_profile_fields",
+      rowKey,
+      siteName,
+      action: "missing_profile_fields",
+      status: "manual_access_required",
+      errorMessage: `missing_profile_fields:${!emailVal ? "email" : ""}${(!emailVal && !phoneVal) ? "," : ""}${!phoneVal ? "phone" : ""}`,
+      targetLink,
+    });
+    return {
+      status: "manual_access_required",
+      status_reason: "missing_profile_fields: email/phone required in saved profile defaults",
+      created_link: "",
+      result_title: "",
+      artifacts,
+    };
+  }
+  if (nameVal) {
+    await driver.type(mapped.name_selector, nameVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+    await forceFieldValue(mapped.name_selector, nameVal);
+  }
+  if (emailVal) {
+    await driver.type(mapped.email_selector, emailVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+    await forceFieldValue(mapped.email_selector, emailVal);
+  }
+  if (phoneVal) {
+    await driver.type(mapped.phone_selector, phoneVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+    await forceFieldValue(mapped.phone_selector, phoneVal);
+  }
+  if (websiteVal) {
+    await driver.type(mapped.website_selector, websiteVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+    await forceFieldValue(mapped.website_selector, websiteVal);
+  }
+
+  await forceFieldValue(mapped.comment_box_selector, selectedClamped);
+  await driver.type(mapped.comment_box_selector, selectedClamped.slice(0, 140), { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
+  await forceFillCommentEverywhere(selectedClamped);
   const hasCommentAfterInitialType = await driver.evaluate((sel) => {
     const el = document.querySelector(sel);
     if (!el) return false;
@@ -1387,7 +1938,8 @@ export async function runAdaptiveBlogCommenting({
   }, mapped.comment_box_selector).catch(() => false);
   if (!hasCommentAfterInitialType) {
     await driver.click(mapped.comment_box_selector, { timeout: 5000 }).catch(() => {});
-    await page.keyboard.type(selected, { delay: 22 }).catch(() => {});
+    await page.keyboard.type(selectedClamped.slice(0, 120), { delay: 14 }).catch(() => {});
+    await forceFillCommentEverywhere(selectedClamped);
   }
 
   const hasCommentText = await driver.evaluate((sel) => {
@@ -1399,6 +1951,44 @@ export async function runAdaptiveBlogCommenting({
     return false;
   }, mapped.comment_box_selector).catch(() => false);
   if (!hasCommentText) {
+    const bruteFilled = await forceFillCommentEverywhere(selectedClamped);
+    if (bruteFilled) {
+      const verifyBrute = await driver.evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return false;
+        const tag = String(el.tagName || "").toLowerCase();
+        if (tag === "textarea" || tag === "input") return String(el.value || "").trim().length > 0;
+        if (el.isContentEditable) return String(el.textContent || "").trim().length > 0;
+        return false;
+      }, mapped.comment_box_selector).catch(() => false);
+      if (verifyBrute) {
+        logger?.log?.({
+          row_key: rowKey,
+          site_name: siteName,
+          action: "adaptive_stage",
+          status: "ok",
+          error_message: "comment_box_force_fill_recovered",
+        });
+      }
+    }
+  }
+
+  const hasCommentTextFinal = await driver.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return false;
+    const tag = String(el.tagName || "").toLowerCase();
+    if (tag === "textarea" || tag === "input") return String(el.value || "").trim().length > 0;
+    if (el.isContentEditable) return String(el.textContent || "").trim().length > 0;
+    return false;
+  }, mapped.comment_box_selector).catch(() => false);
+  if (!hasCommentTextFinal) {
+    const fallbackResult = await tryGenericFallbackFlow({
+      reason: "comment_box_fill_failed",
+      commentText: selectedClamped,
+      facts,
+    });
+    if (fallbackResult) return fallbackResult;
+
     const artifacts = await captureArtifacts({
       page,
       siteDir,
@@ -1418,23 +2008,40 @@ export async function runAdaptiveBlogCommenting({
       artifacts,
     };
   }
-  const isEmailAddr = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ""));
-  const nameVal = String((!isEmailAddr(row.username) && row.username) || row.company_name || "").trim();
-  const emailVal = String(row.email || "").trim();
-  // website field = OUR website (default_website_url), not the blog we're commenting on (targetLink)
-  const websiteVal = String(row.default_website_url || "").trim();
-    if (nameVal) {
-      await driver.type(mapped.name_selector, nameVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
-      await forceFieldValue(mapped.name_selector, nameVal);
+  // Safety net: force-fill any visible required email/tel fields still empty.
+  await driver.evaluate((vals) => {
+    const isVisible = (el) => {
+      const s = window.getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return s.display !== "none" && s.visibility !== "hidden" && r.width > 3 && r.height > 3;
+    };
+    const fill = (el, v) => {
+      if (!el || !v) return false;
+      el.focus();
+      el.value = v;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    };
+    const reqInputs = Array.from(document.querySelectorAll("input[required], input[aria-required='true']"))
+      .filter((el) => isVisible(el) && !el.disabled && !el.readOnly);
+    for (const el of reqInputs) {
+      const type = String(el.getAttribute("type") || "text").toLowerCase();
+      const hint = [
+        el.getAttribute("name") || "",
+        el.getAttribute("id") || "",
+        el.getAttribute("placeholder") || "",
+        el.getAttribute("aria-label") || "",
+        el.getAttribute("title") || "",
+      ].join(" ").toLowerCase();
+      if (String(el.value || "").trim()) continue;
+      if (type === "email" || hint.includes("email")) fill(el, vals.email);
+      else if (type === "tel" || type === "number" || hint.includes("phone") || hint.includes("mobile") || hint.includes("contact")) fill(el, vals.phone);
+      else if (hint.includes("name") || hint.includes("author")) fill(el, vals.name);
+      else if (type === "url" || hint.includes("website") || hint.includes("url")) fill(el, vals.website);
     }
-    if (emailVal) {
-      await driver.type(mapped.email_selector, emailVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
-      await forceFieldValue(mapped.email_selector, emailVal);
-    }
-    if (websiteVal) {
-      await driver.type(mapped.website_selector, websiteVal, { charByChar: true, typingDelayRange: typingDelay }).catch(() => {});
-      await forceFieldValue(mapped.website_selector, websiteVal);
-    }
+    return true;
+  }, { name: nameVal, email: emailVal, phone: phoneVal, website: websiteVal }).catch(() => {});
 
     await ensureCheckboxTicked();
 
@@ -1459,7 +2066,7 @@ export async function runAdaptiveBlogCommenting({
     selector: mapped.comment_box_selector,
     actionTaken: "fill_comment_form_fields",
     result: "success",
-    note: `comment=${mapped.comment_box_selector}; name=${mapped.name_selector}; email=${mapped.email_selector}; website=${mapped.website_selector}`,
+    note: `comment=${mapped.comment_box_selector}; name=${mapped.name_selector}; email=${mapped.email_selector}; phone=${mapped.phone_selector}; website=${mapped.website_selector}`,
   });
   logger?.log?.({
     row_key: rowKey,
@@ -1469,41 +2076,43 @@ export async function runAdaptiveBlogCommenting({
     error_message: "fields_prefilled_waiting_approval",
   });
 
-  const approval = await requestHumanApproval({
-    page,
-    runDir,
-    runId,
-    siteSlug,
-    siteName,
-    rowKey,
-    mode: approvalMode,
-    artifactNameBase: "pre_submit_adaptive",
-    forceManual: forceManualApproval,
-    prefillOnly,
-    requestPayload: {
-      status: "ready_to_submit",
-      driver_used: driver.name,
-      cms_guess: detection.cms_type_guess,
-      detection_confidence: detection.confidence_score,
-      form_detected: true,
-      fallback_used: fallbackUsed,
-      scroll_steps: detection.scroll_steps,
-      detected_fields: mapped,
-      page_facts: {
-        title: facts.title,
-        headings: facts.headings.slice(0, 4),
-        key_sentences: facts.key_sentences.slice(0, 4),
-        quote_fragment: facts.quote_fragment,
-      },
-      draft_selected: selected,
-      draft_suggestions: draftPack.drafts,
-      draft_hash: hashText(selected),
-      similarity_score: Number(Math.max(bestDomain, bestGlobal).toFixed(3)),
-      uniqueness_check: uniqueness,
-      similarity_blocked: draftPack.allBlocked,
-      warnings: draftPack.warnings,
-    },
-  });
+  const approval = autoApproveSubmit
+    ? { approved: true, screenshotPath: "", htmlPath: "", decision: {} }
+    : await requestHumanApproval({
+        page,
+        runDir,
+        runId,
+        siteSlug,
+        siteName,
+        rowKey,
+        mode: approvalMode,
+        artifactNameBase: "pre_submit_adaptive",
+        forceManual: forceManualApproval,
+        prefillOnly,
+        requestPayload: {
+          status: "ready_to_submit",
+          driver_used: driver.name,
+          cms_guess: detection.cms_type_guess,
+          detection_confidence: detection.confidence_score,
+          form_detected: true,
+          fallback_used: fallbackUsed,
+          scroll_steps: detection.scroll_steps,
+          detected_fields: mapped,
+          page_facts: {
+            title: facts.title,
+            headings: facts.headings.slice(0, 4),
+            key_sentences: facts.key_sentences.slice(0, 4),
+            quote_fragment: facts.quote_fragment,
+          },
+          draft_selected: selectedClamped,
+          draft_suggestions: draftPack.drafts,
+          draft_hash: hashText(selectedClamped),
+          similarity_score: Number(Math.max(bestDomain, bestGlobal).toFixed(3)),
+          uniqueness_check: uniqueness,
+          similarity_blocked: draftPack.allBlocked,
+          warnings: draftPack.warnings,
+        },
+      });
   logger?.log?.({
     row_key: rowKey,
     site_name: siteName,
@@ -1525,7 +2134,7 @@ export async function runAdaptiveBlogCommenting({
     };
   }
 
-  const finalDraft = String(approval?.decision?.edited_draft || selected).trim();
+  const finalDraft = String(approval?.decision?.edited_draft || selectedClamped).trim().slice(0, 420);
   const finalDomainSim = bestSimilarityAgainst(domainEntries, finalDraft);
   const finalGlobalSim = bestSimilarityAgainst(globalEntries, finalDraft);
 

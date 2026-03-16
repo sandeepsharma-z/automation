@@ -42,7 +42,8 @@ const MIN_DELAY_MIN = Number(process.env.MIN_DELAY_MINUTES || 3);
 const MAX_DELAY_MIN = Number(process.env.MAX_DELAY_MINUTES || 7);
 const SKIP_DELAY = String(process.env.SKIP_DELAY || "0") === "1";
 const AUTO_APPROVE_SUBMIT = String(process.env.AUTO_APPROVE_SUBMIT || "1") === "1";
-const TARGET_PROCESS_TIMEOUT_MS = Math.max(45000, Number(process.env.TARGET_PROCESS_TIMEOUT_MS || 8 * 60 * 1000));
+// Fail fast for stuck targets so queue keeps moving.
+const TARGET_PROCESS_TIMEOUT_MS = Math.max(45000, Number(process.env.TARGET_PROCESS_TIMEOUT_MS || 90 * 1000));
 const TARGETS_PATH = resolveTargetsPath(PROJECT_ROOT);
 const RELIABILITY_DELAYS = {
   afterNavigationMs: 2000,
